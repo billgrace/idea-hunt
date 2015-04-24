@@ -1,0 +1,103 @@
+Tentative name: Idea Hunt
+
+The point of the game is to have fun flying around and earning points. A side effect of the game is become familiar and comfortable with ideas that will prove useful later in the player's educational progress.
+
+Each player will has a "self" in the game. This is similar to the Wii Mii and the Minecraft skin. It has some capability to be personalized by the player and saved under a name.
+A player's self is an important part of the game and is allocated a significant share of resources to make it fun, customizable, slightly realistic and worth messing around with.
+
+Three windows on the screen: a main window rendering a "SelfViewCam" camera at the self's point of view, a navigation window on the side rendering a "NavCam" point of view from somewhere high above the self and a vanity window rendering a "VanityCam" view from somewhere fairly close to the self and always pointing at and showing the self.
+
+The game always begins at a "survey" point with the self in a launcher and available topics showing as huge slides in the distance. The controls allow (1) panning - at least horizontal and perhaps also vertical if the number of topics grows large enough - to browse the topics and (2) launching the self toward a selected topic. At this browsing stage, the topics appear as flat screens in the distance, perhaps with animations or videos playing on them.
+
+As the player arms the launcher (say, pulls the self back in a rubber-band launcher or compresses the spring in a mechanical gun), the trarget topic slide morphs into a launch guide (a tube, a worm hole, ...) through which the self flies. Some of the distant topic screen remains as a distant target toward which the self flies. This stage should have some excitement with sounds of launcher arming and very high speed flying after actual launch. There are no controls involved in the flight through the guide - perhaps an abort button to go back to the initial state??? The SelfViewCam shows the guide streaking past. Hmmmm - sounds of the flight through the guide ????
+
+After a brief, high speed flight through the launch guide, the self exits the far end of the guide and is flying fairly high over a terrain. The SelfViewCam shows the terrain below, the NavCam shows a larger portion of the terrain and the sound is that of wind whistling past a glider in flight. The controls now guide the flight - up, down, left, right, fast, slow.
+
+Placed here and there in the terrain are "idea markers". The player crashes into (or otherwise selects/touches/indicates/catches) an idea marker and is presented with some kind of challenge that can earn points - a puzzle, a question, .... ??? After the challenge, the self is immediately back up in the sky flying around.
+
+There should be varying levels to which the player can go with a given idea:
+- see it
+- grab it (crash into it?)
+- "open" it up somehow and do something with it
+- watch a video about it
+- press on to a WikiPedia link about it
+- purchase a toy related to it
+- fetch the plans for a project related to it
+
+The player has the option of teleporting back to the launcher to return to the topic choice phase.
+
+If the player crashes into some part of the terrain that does NOT have an idea marker, then there is a gruesome and fun crash and the player has the option to either return to the sky in flight or return to the launcher for another topic choice.
+
+===== a thought: each topic "space" will apparently have two main (rectangular) visible "flat screens", a terrain and a horizon. Rather than making these as monolithic rectangles, let's make them be collections of smaller rectangles which can themselves consist of smaller elements. This should make the topic design work more practical and leave open the possibility of player participation in topic design.
+===== also, let's make the edges of each topic terrain match the opposite edge so that the player can fly freely around without ever smacking into a wall at the edge of the terrain - the terrain will simply re-build itself as needed when an edge is approached making the terrain rectangle in effect a flat globe (I think Minecraft and THREE.js both operate this way....)
+
+Global Geometry *****************************************************************************************
+(v0.2)
+The topic space through which the self soars during the game is a box of size 4,000 along both horizontal dimensions and 3,000 high. I think these are essentially arbitray units as far as Three.js is concerned but the physics in Cannon.js is natively metric so let's take these sizes to be meters and see how it goes.
+The bottom of the topic space box is a terrain where the ideas are hidden.
+The top of the topic space box is the sky.
+The four sides of the topic space box are pieces of a single panoramic JPG image mapped as 16,000 "meters" wide and 3,000 "meters" high. One panel, 4,000 x 3,000 of this panoramic image, is what shows as the slide in the distance during topic selection from the launcher. This "slide" panel is the left-most quarter of the panorama. After launch, the self is flying within the topic space box with all of the panoramic image loaded onto the four faces of the box.
+At the start of the game - launch mode - the self in the launcher is facing in the -Z direction. The launcher is x-y located in the middle of the topic space box face opposite that of the visible slide face. The z location of the launcher is such that the "muzzle" end of the launcher is flush with the topic space box face so the launched self will fly out of the launcher and into the topic space box
+The four faces will be impenetrable to start with - just for simplicity's sake. Later, if the self flys to within, say, 400 meters of one of the side faces, that face begins to fade and the self can fly through the (transparent by the time the self reaches it) face and find that it has re-entered the topic space from the opposite direction.
+The question of the self flying THROUGH the top of the box is interesting.... for now, it's not allowed (just to keep things reasonably simple in the beginning).
+The launcher is a flat strip (i.e. a box with little height). Launcher length: 1,000 meters. Launcher width 20 meters.
+Hopefully the face of the topic space into which the launcher fits will simply be invisible from the point of view of any point on the launcher.
+The self is getting around by flying so it doesn't really need legs. It's important that it have an identity so we want a head. The question of arms and hands is still open.....
+The self, for starters, is a box with roughly the proportions of a human head. It will start with cartoon-ish images for front, rear, sides and top. The bottom should be an image that leaves open the possibility of attaching some kind of "under carriage" (arms, space cruiser, speed boat ?????).
+The cartoonish images of the self can be replaced by corresponding photos of the player.
+The front image of the self will have a set of emotional expressions (interested, eager, happy, sad, surprised, afraid).
+Looking up the proportions of the human head... online anime art tutorial puts it at height(chin-to-crown)/width(temple-to-temple-NOT-including-ears)/front/back(tip-of-nose-to-back-of-head) as 16/8/9. Apparently a typical ratio of head height to full body height is about 8 so a 2 meter body might have a .25 meter-high(y) head => .125 meters temple-to-temple(x) => .14 meters back-of-head-to-tip-of-nose(z). Let's try "self" for starters as a box that's .25 meters high, .125 meters wide and .14 meters front to back.
+Global Geometry *****************************************************************************************
+
+Needed -
+- self editor
+... vanity cam controls to evaluate appearance of self
+... self editing happens in a little workshop near the launcher
+... let's define a self as consisting of:
+- - - - a text name
+- - - - a head consisting of five views, each slightly oval, each a JPG image:
+= = = = = = front view (face, mask, helmet front)
+= = = = = = top view (hair, hat)
+= = = = = = back view (hair, collar)
+= = = = = = left/right views (profiles)
+- - - - a body consisting of four views, each rectangular, each a JPG image:
+= = = = = = front view (chest/belly/hips)
+= = = = = = back view (shoulder blades/back/butt)
+= = = = = = left/right views (1 manipulator anchor point each plus 1 support anchor point each)
+- - - - zero or more manipulators (arms, tentacles, mechanisms)
+= = = = = = starting manipulator design = 2 segmented arm, each segment is a cylinder
+- - - - zero or more supports (legs, fins, wheels)
+= = = = = = starting support design = 2 segmented arm, each segment is a cylinder
+... text editing of self's name
+... local storage for selfs
+- starting set of topics
+... topic browsing screen
+... topic launch visuals and audio
+... topic terrain and horizon
+- starting set of ideas related to the topics
+... idea markers visual appearance
+... idea markers locations in terrain
+- starting launcher design
+... a giant coil spring with a chair on the front?
+... a pair of skiis on the bottom of the chair?
+... a pair of tracks on which the skiis run?
+... controls "compress" the launcher, moving the self back
+... launch releases the spring and the self roars forward
+... when the tracks end, the self flies off into the game space
+- topic browsing world design
+- launching world design
+- flying world design
+
+Version 0.0, 0.1:
+	self is a yellow sphere
+	set of topics is
+		a picture of the Grand Canyon
+	launcher is a red cylinder
+Version 0.2:
+	self is a peach-colored box roughly head-proportioned
+	set of topics is
+		Electricity
+		Mechanics
+		Tools
+	launcher is a green strip
+

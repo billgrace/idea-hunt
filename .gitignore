@@ -2,3 +2,5 @@ three.min.js
 stats.min.js
 OrbitControls.js
 cannon.min.js
+*.ai
+

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Idea Hunt Version 0.0</title>
+		<title>Idea Hunt 0.2</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style type="text/css">
@@ -14,9 +14,10 @@
 	</head>
 	<body>
 		<script type="text/javascript" src="three.min.js"></script>
+		<script type="text/javascript" src="OrbitControls.js"></script>
 		<script type="text/javascript" src="stats.min.js"></script>
 		<script type="text/javascript">
-			var scene, renderer, light;
+			var scene, renderer;
 			var devMsg;
 			var viewCamera, viewCamLight, viewBackgroundColor;
 			var navCamera, navCamLight, navBackgroundColor;
@@ -32,12 +33,20 @@
 			var platformMesh;
 			var launcherMesh;
 			var selfGeometry, selfMaterial, selfMesh;
+			var t3Controls;
 			init();
 			animate();
 			function init() {
 				scene = new THREE.Scene();
-				light = new THREE.DirectionalLight( 0xffffff );
-				light.position.set( 0, 1, 0 ).normalize();
+				var rightLight = new THREE.DirectionalLight( 0x888888 );
+				rightLight.position.set( 1, 0, 0 ).normalize();
+				scene.add(rightLight);
+				var leftLight = new THREE.DirectionalLight( 0x888888 );
+				leftLight.position.set( -1, 0, 0 ).normalize();
+				scene.add(leftLight);
+				var bottomLight = new THREE.DirectionalLight( 0x888888 );
+				bottomLight.position.set( 0, -1, 0 ).normalize();
+				scene.add(bottomLight);
 				renderer = new THREE.WebGLRenderer();
 				document.body.appendChild( renderer.domElement );
 
@@ -51,8 +60,8 @@
 				scene.add( viewCamLight );
 
 				navBackgroundColor = new THREE.Color().setRGB( 0.1, 0.2, 0.7 );
-				navCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 10000 );
-				navCamera.position.set( 0, 800, 0 );
+				navCamera = new THREE.PerspectiveCamera( 60, 1.3, 1, 10000 );
+				navCamera.position.set( 0, 1200, 0 );
 				navCamera.rotation.x = -Math.PI/2;
 				navCamLight = new THREE.DirectionalLight( 0x888888 );
 				navCamLight.position.copy( navCamera.position );
@@ -60,8 +69,8 @@
 				scene.add( navCamLight );
 
 				selfBackgroundColor = new THREE.Color().setRGB( 0.1, 0.7, 0.9 );
-				selfCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 10000 );
-				selfCamera.position.set( 0, 0, -200 );
+				selfCamera = new THREE.PerspectiveCamera( 15, 1.3, 1, 10000 );
+				selfCamera.position.set( 0, 0, -1000 );
 				selfCamera.rotation.y = Math.PI;
 				selfCamLight = new THREE.DirectionalLight( 0x888888 );
 				selfCamLight.position.copy( selfCamera.position );
@@ -69,48 +78,68 @@
 				scene.add( selfCamLight );
 
 				coreWindowContainer = document.createElement( "div" );
-				coreWindowContainer.style.cssText = "position:absolute;border-style:solid;border-size:1px;border-color:#c0c;background-color:#808";
+				coreWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c0c;background-color:#808";
 				document.body.appendChild( coreWindowContainer );
 				coreWindowContainer.innerHTML = "Core controls";
 				optHWindowContainer = document.createElement( "div" );
-				optHWindowContainer.style.cssText = "position:absolute;border-style:solid;border-size:1px;border-color:#0cc;background-color:#088";
+				optHWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#0cc;background-color:#088";
 				document.body.appendChild( optHWindowContainer );
 				optHWindowContainer.innerHTML = "Horizontally oriented options";
 				optVWindowContainer = document.createElement( "div" );
-				optVWindowContainer.style.cssText = "position:absolute;border-style:solid;border-size:1px;border-color:#cc0;background-color:#880";
+				optVWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#cc0;background-color:#880";
 				document.body.appendChild( optVWindowContainer );
 				optVWindowContainer.innerHTML = "Vertically oriented options";
-				topicHorizonTexture = THREE.ImageUtils.loadTexture( 'GrndCnynFull.jpg' );
+				topicHorizonTexture = THREE.ImageUtils.loadTexture( 'GrndCnynFull.jpg', render );
 				topicHorizonMesh = new THREE.Mesh(
-					new THREE.PlaneGeometry( 1600, 900 ),
-					new THREE.MeshBasicMaterial( { map: topicHorizonTexture } ) );
+					new THREE.BoxGeometry( 4000, 3000, 4000 ),
+					new THREE.MeshBasicMaterial( { map: topicHorizonTexture, side:THREE.DoubleSide } ) );
 				topicHorizonMesh.position.set( 0, 0, -300 );
 				platformMesh = new THREE.Mesh(
 					new THREE.BoxGeometry( 200, 50, 200 ),
 					new THREE.MeshLambertMaterial( { color:0x00ff00 } ) );
 				platformMesh.position.set( 0, -50, 100 );
+
+				var launcherMeshTexture = THREE.ImageUtils.loadTexture( 'GrndCnynFull.jpg', render );
+				var launcherMeshMaterial = new THREE.MeshBasicMaterial( { map: launcherMeshTexture } );
 				launcherMesh = new THREE.Mesh(
 					new THREE.CylinderGeometry( 25, 25, 150 ),
 					new THREE.MeshLambertMaterial( { color:0xff0000 } ) );
+//					launcherMeshMaterial );
 				launcherMesh.position.set( 0, 0, 125 );
 				launcherMesh.rotation.x = Math.PI / 2;
-				selfMesh = new THREE.Mesh(
-					new THREE.SphereGeometry( 25 ),
-					new THREE.MeshPhongMaterial( { color:0xffff00 } ) );
-				selfMesh.position.set( 0, 0, 0 );
+				// selfMesh = new THREE.Mesh(
+				// 	new THREE.SphereGeometry( 25 ),
+				// 	new THREE.MeshPhongMaterial( { color:0xffff00 } ) );
+				// var selfMeshMaterial = new THREE.MeshPhongMaterial( { color:0xffff00 } );
+				var selfMaterialArray = [];
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRightV0.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfLeftV0.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfTopV0.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfBottomV0.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRearV0.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfFrontV0.jpg' ) }));
+				var selfMeshMaterial = new THREE.MeshFaceMaterial(selfMaterialArray);
+				var selfMeshGeometry = new THREE.BoxGeometry( 50, 100, 56 );
+				selfMesh = new THREE.Mesh( selfMeshGeometry, selfMeshMaterial );
+				selfMesh.position.set( 0, 0, -100 );
 				scene.add( topicHorizonMesh );
 				scene.add( platformMesh );
 				scene.add( launcherMesh );
 				scene.add( selfMesh );
 
+				// create THREE orbit controls to manage orientation, view, scale....
+				t3Controls = new THREE.OrbitControls( viewCamera );
+				t3Controls.name = "t3Controls";
+				t3Controls.damping = 0.2;
+				t3Controls.addEventListener( 'change', render );
 				stats = new Stats();
 				stats.domElement.style.position = "absolute";
 				stats.domElement.style.top = "0px";
 				document.body.appendChild( stats.domElement );
 				devMsg = document.createElement( "div" );
-				devMsg.style.cssText = "position:absolute;border-style:solid;border-size:1px;border-color:#c00;background-color:#f88";
+				devMsg.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c00;background-color:#f88";
 				devMsg.style.left = stats.domElement.style.width;
-				devMsg.style.height = "30px";
+				devMsg.style.height = "20px";
 				devMsg.style.top = "0px";
 				document.body.appendChild( devMsg );
 
@@ -255,6 +284,7 @@
 			}
 			function animate() {
 				render();
+				t3Controls.update();
 				stats.update();
 				requestAnimationFrame( animate );
 			}
@@ -266,23 +296,25 @@
 				renderer.setScissor( viewWindowLeft, windowHeight - viewWindowBottom, viewWindowWidth, viewWindowHeight );
 				renderer.enableScissorTest( true );
 				renderer.setClearColor( viewBackgroundColor );
-				// viewCamera.aspect = viewWindowWidth/viewWindowHeight;
+				viewCamera.aspect = viewWindowWidth/viewWindowHeight;
 				viewCamera.lookAt( topicHorizonMesh.position );
-				// viewCamera.updateProjectionMatrix();
+				viewCamera.updateProjectionMatrix();
 				renderer.render( scene, viewCamera );
 
 				renderer.setViewport( navWindowLeft, windowHeight - navWindowBottom, navWindowWidth, navWindowHeight );
 				renderer.setScissor( navWindowLeft, windowHeight - navWindowBottom, navWindowWidth, navWindowHeight );
 				renderer.enableScissorTest( true );
 				renderer.setClearColor( navBackgroundColor );
-				// navCamera.aspect = navWindowWidth/navWindowHeight;
-				// navCamera.updateProjectionMatrix();
+				navCamera.aspect = navWindowWidth/navWindowHeight;
+				navCamera.updateProjectionMatrix();
 				renderer.render( scene, navCamera );
 
 				renderer.setViewport( selfWindowLeft, windowHeight - selfWindowBottom, selfWindowWidth, selfWindowHeight );
 				renderer.setScissor( selfWindowLeft, windowHeight - selfWindowBottom, selfWindowWidth, selfWindowHeight );
 				renderer.enableScissorTest( true );
 				renderer.setClearColor( selfBackgroundColor );
+				selfCamera.aspect = selfWindowWidth/selfWindowHeight;
+				selfCamera
 				renderer.render( scene, selfCamera );
 			}
 		</script>
