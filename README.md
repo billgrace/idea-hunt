@@ -10,3 +10,22 @@ I find the set of names "SelfCam", "NavCam" and "VanityCam" a bit misleading - b
 
 Next (v0.2) let's firm up the global geometry of the scene including the geometry of the cameras.
 
+OK, now (v0.3) to get some motion controls going. Using the Three OrbitControls allowed some inspection of what I'd built so far but now I need to get my own motion controls that operate the way I want it to. First off, the orbit controls respond to touch/mouse ANYWHERE in the browser window and I want to restrict it to the view rendering area. Also, in addition to the "drag to swivel, pinch to zoom" kind of motion control, I want to have explicit controls like buttons and sliders that can be used as needed.
+
+Let's pick a subset of all possible gesture/mouse controls that can be reasonably implemented and used. Hmmmmmmmm..... if the explicit controls are good enough, we might not need ANY gesture stuff. OK, let's pick a set of explicit controls and make them easily reusable.
+	Button
+		Has a shape
+		Has a color or image
+		Has a label
+		Triggers a response immediately when touched/clicked
+	Slider
+		Has a width and length
+		Has a range of numeric values corresponding to position along the length
+		Has a visible indicator showing the present value's position
+		Is sampled by periodic foreground flow (animate or render routine)
+
+Let's define the events we're looking for:
+	"Click" = mouse down or one finger touch with release within a short time (say, 100 mS?)
+	"Press" = mouse down or one finger touch which is held for longer than a "Click"
+	"Drag" = mouse down or one finger touch with mouse move or touch move before release
+	
