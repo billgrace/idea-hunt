@@ -15,10 +15,11 @@
 	<body>
 		<script type="text/javascript" src="three.min.js"></script>
 		<script type="text/javascript" src="stats.min.js"></script>
+		<script type="text/javascript" src="controls.js"></script>
 		<script type="text/javascript">
-//			var testButton;
 			var testLabelCore;
 			var testSliderCore;
+			var testBigSlider;
 			var counter, leftValue, rightValue;
 			var scene, renderer;
 			var devMsg;
@@ -39,147 +40,6 @@
 			var t3Controls;
 			init();
 			animate();
-			function myHLabel( labelColor, labelText, hostElementId, leftPercent, topPercent, widthPercent, heightPercent ) {
-				this.labelColor = labelColor;
-				this.labelText = labelText;
-				this.hostId = hostElementId;
-				this.host = document.getElementById( hostElementId );
-				this.leftPercent = leftPercent;
-				this.topPercent = topPercent;
-				this.widthPercent = widthPercent;
-				this.heightPercent = heightPercent;
-				this.visible = document.createElement( "div" );
-				this.visible.style.cssText = "position:absolute;background-color:" + this.labelColor;
-				this.visible.innerHTML = this.labelText;
-				document.body.appendChild( this.visible );
-				var self = this;
-				this.resize = function( windowElementId, left, top, width, height ) {
-					var hostElement = document.getElementById( windowElementId ); 
-					var hostLeft = hostElement.offsetLeft;
-					var hostTop = hostElement.offsetTop;
-					var hostWidth = hostElement.offsetWidth;
-					var hostHeight = hostElement.offsetHeight;
-					self.visible.style.left = "0" + ( ( hostLeft + ( left * hostWidth ) ) | 0 ) + "px";
-					self.visible.style.top = "0" + ( ( hostTop + ( top * hostHeight ) ) | 0 ) + "px";
-					self.visible.style.width = "0" + ( ( width * hostWidth ) | 0 ) + "px";
-					self.visible.style.height = "0" + ( ( height * hostHeight ) | 0 ) + "px";
-				}
-				this.windowResizeHandler = function() {
-					self.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				}
-				this.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				window.addEventListener( "resize", this.windowResizeHandler, false );
-			}
-			function myHSlider( sliderColor, backgroundColor, hostElementId, leftPercent, topPercent, widthPercent, heightPercent, leftValue, rightValue, startingValue ) {
-				this.sliderColor = sliderColor;
-				this.backgroundColor = backgroundColor;
-				this.leftValue = leftValue;
-				this.rightValue = rightValue;
-				this.currentValue = startingValue;
-				this.hostId = hostElementId;
-				this.host = document.getElementById( hostElementId );
-				this.leftPercent = leftPercent;
-				this.topPercent = topPercent;
-				this.widthPercent = widthPercent;
-				this.heightPercent = heightPercent;
-				this.visible = document.createElement( "div" );
-				this.visible.style.cssText = "position:absolute;background-color:" + this.backgroundColor;
-				document.body.appendChild( this.visible );
-				this.slider = document.createElement( "div" );
-				this.slider.style.cssText = "position:absolute;background-color:" + this.sliderColor;
-				document.body.appendChild( this.slider );
-				var self = this;
-				this.resize = function( windowElementId, left, top, width, height ) {
-					var hostElement = document.getElementById( windowElementId ); 
-					var hostLeft = hostElement.offsetLeft;
-					var hostTop = hostElement.offsetTop;
-					var hostWidth = hostElement.offsetWidth;
-					var hostHeight = hostElement.offsetHeight;
-					var visibleLeft = ( hostLeft + ( left * hostWidth ) ) | 0;
-					var visibleTop = ( hostTop + ( top * hostHeight ) ) | 0;
-					var visibleWidth = ( width * hostWidth ) | 0;
-					var visibleHeight = ( height * hostHeight ) | 0;
-					var sliderMargin = 0.1 * visibleHeight;
-					var sliderHeight = ( visibleHeight - 2 * sliderMargin ) | 0;
-					var sliderWidth = sliderHeight;
-					var motionRange = visibleWidth - sliderWidth - 2 * sliderMargin;
-					var sliderLeft = ( visibleLeft + sliderMargin + motionRange * ( self.currentValue / ( self.rightValue - self.leftValue ) ) ) | 0;
-					var sliderTop = visibleTop + 0.1 * visibleHeight;
-					self.visible.style.left = "0" + visibleLeft + "px";
-					self.visible.style.top = "0" + visibleTop + "px";
-					self.visible.style.width = "0" + visibleWidth + "px";
-					self.visible.style.height = "0" + visibleHeight + "px";
-					self.slider.style.left = "0" + sliderLeft + "px";
-					self.slider.style.top = "0" + sliderTop + "px";
-					self.slider.style.width = "0" + sliderWidth + "px";
-					self.slider.style.height = "0" + sliderHeight + "px";
-				}
-				this.windowResizeHandler = function() {
-					self.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				}
-				this.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				window.addEventListener( "resize", this.windowResizeHandler, false );
-			}
-			function myButton( buttonColor, hostElementId, leftPercent, topPercent, widthPercent, heightPercent, handler ) {
-				// buttonColor is a text color specifier: "#ff0088"
-				// host is the text id of the div into which button is placed
-				// left-, top-, width- and heightPercent are floats = button's percentage of corresponding host div
-				this.buttonColor = buttonColor;
-				this.hostId = hostElementId;
-				this.host = document.getElementById( hostElementId );
-				this.leftPercent = leftPercent;
-				this.topPercent = topPercent;
-				this.widthPercent = widthPercent;
-				this.heightPercent = heightPercent;
-				this.visible = document.createElement( "div" );
-				this.visible.style.cssText = "position:absolute;background-color:" + buttonColor;
-				document.body.appendChild( this.visible );
-				this.buttonDown = false;
-				this.startingX = 0;
-				this.startingY = 0;
-				this.dragX = 0;
-				this.dragY = 0;
-				var self = this;
-				this.resize = function( windowElementId, left, top, width, height ) {
-					var hostElement = document.getElementById( windowElementId ); 
-					var hostLeft = hostElement.offsetLeft;
-					var hostTop = hostElement.offsetTop;
-					var hostWidth = hostElement.offsetWidth;
-					var hostHeight = hostElement.offsetHeight;
-					self.visible.style.left = "0" + ( ( hostLeft + ( left * hostWidth ) ) | 0 ) + "px";
-					self.visible.style.top = "0" + ( ( hostTop + ( top * hostHeight ) ) | 0 ) + "px";
-					self.visible.style.width = "0" + ( ( width * hostWidth ) | 0 ) + "px";
-					self.visible.style.height = "0" + ( ( height * hostHeight ) | 0 ) + "px";
-				}
-				this.windowResizeHandler = function() {
-					self.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				}
-				this.mouseDownEventHandler = function( e ) {
-					handler( "click" );
-				}
-				this.mouseMoveEventHandler = function( e ) {
-				}
-				this.mouseUpEventHandler = function( e ) {
-				}
-				this.touchStartEventHandler = function( e ) {
-					event.preventDefault();
-					handler( "touch" );
-				}
-				this.touchMoveEventHandler = function( e ) {
-					event.preventDefault();
-				}
-				this.touchEndEventHandler = function( e ) {
-					event.preventDefault();
-				}
-				this.resize( self.hostId, self.leftPercent, self.topPercent, self.widthPercent, self.heightPercent );
-				window.addEventListener( "resize", this.windowResizeHandler, false );
-				this.visible.addEventListener( "mousedown", this.mouseDownEventHandler, false );
-				this.visible.addEventListener( "mousemove", this.mouseMoveEventHandler, false );
-				this.visible.addEventListener( "mouseup", this.mouseUpEventHandler, false );
-				this.visible.addEventListener( "touchstart", this.touchStartEventHandler, false );
-				this.visible.addEventListener( "touchmove", this.touchMoveEventHandler, false );
-				this.visible.addEventListener( "touchend", this.touchEndEventHandler, false );
-			}
 			function showClickHandler1( argument ) {
 				devMsg.innerHTML = "1" + argument;
 			}
@@ -202,6 +62,7 @@
 				scene.add(bottomLight);
 				renderer = new THREE.WebGLRenderer();
 				document.body.appendChild( renderer.domElement );
+				renderer.domElement.id = "rendererDomElement";
 
 				viewBackgroundColor = new THREE.Color().setRGB( 0.1, 0.8, 0.1 );
 				viewCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 10000 );
@@ -245,6 +106,7 @@
 				optVWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#cc0;background-color:#880";
 				document.body.appendChild( optVWindowContainer );
 				optVWindowContainer.innerHTML = "Vertically oriented options";
+
 				topicHorizonTexture = THREE.ImageUtils.loadTexture( 'GrndCnynFull.jpg', render );
 				topicHorizonMesh = new THREE.Mesh(
 					new THREE.BoxGeometry( 4000, 3000, 4000 ),
@@ -295,15 +157,22 @@
 				window.addEventListener( "resize", onWindowResize, false );
 				window.addEventListener( "orientationchange", onWindowResize, false );
 
-				var testButtonCore = new myButton( "#ff00ff", "core", 0.1, 0.2, 0.2, 0.2, showClickHandler1 );
-				testLabelCore = new myHLabel( "#cc00cc", "C123", "core", 0.1, 0.4, 0.2, 0.1 );
+				function trapOuterTouches( e ) {
+					if( nowTracking )
+						e.preventDefault();
+				}
+
+				var testButtonCore = new simpleButton( "#ff00ff", "core", 0.1, 0.2, 0.2, 0.2, showClickHandler1 );
+				testLabelCore = new horizontalLabel( "#cc00cc", "C123", "core", 0.1, 0.4, 0.2, 0.1 );
 
 				leftValue = 0; rightValue = 100;
 				counter = 0;
-				testSliderCore = new myHSlider( "#880088", "#440044", "core", 0.1, 0.6, 0.8, 0.2, leftValue, rightValue, 25 );
+				testSliderCore = new horizontalSlider( "#cc0088", "#440044", leftValue, rightValue, 25, "core", 0.15, 0.07, 0.3, 0.7, 0.5 );
 
-				var testButtonOptH = new myButton( "#00ffff", "opth", 0.2, 0.4, 0.2, 0.2, showClickHandler2 );
-				var testButtonOptV = new myButton( "#ffff00", "optv", 0.3, 0.4, 0.2, 0.2, showClickHandler3 );
+				testBigSlider = new horizontalSlider( "#cc0088", "#440044", leftValue, rightValue, 25, "rendererDomElement", 0.15, 0.07, 0.3, 0.7, 0.5 );
+
+				var testButtonOptH = new simpleButton( "#00ffff", "opth", 0.2, 0.4, 0.2, 0.2, showClickHandler2 );
+				var testButtonOptV = new simpleButton( "#ffff00", "optv", 0.3, 0.4, 0.2, 0.2, showClickHandler3 );
 
 			}
 			function updateRenderingGeometry() {
@@ -444,16 +313,6 @@
 			function animate() {
 				render();
 				stats.update();
-				counter++;
-				if( counter > 10 ) {
-					counter = 0;
-					testSliderCore.currentValue++;
-					if( testSliderCore.currentValue > rightValue )
-						testSliderCore.currentValue = leftValue;
-					testSliderCore.windowResizeHandler();
-					testLabelCore.visible.innerHTML = testSliderCore.currentValue;
-				}
-
 				requestAnimationFrame( animate );
 			}
 			function render() {

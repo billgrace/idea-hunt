@@ -28,4 +28,7 @@ Let's define the events we're looking for:
 	"Click" = mouse down or one finger touch with release within a short time (say, 100 mS?)
 	"Press" = mouse down or one finger touch which is held for longer than a "Click"
 	"Drag" = mouse down or one finger touch with mouse move or touch move before release
-	
+
+Alright, I've now got a basic label, a basic button and a basic slider and they seem to be working fairly well. I also split the index.html file into two pieces - index.html and controls.js - because it was just getting uncomfortably large. So far it seems that using a separate JavaScript file as essentially an "include file", even though not officially spoken of that way in the online discussions, apparently works OK as a place to stow a set of functions to make editing more humane.
+
+Let's call this v0.4, commit it and move on to refining the controls.
