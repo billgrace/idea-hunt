@@ -32,3 +32,17 @@ Let's define the events we're looking for:
 Alright, I've now got a basic label, a basic button and a basic slider and they seem to be working fairly well. I also split the index.html file into two pieces - index.html and controls.js - because it was just getting uncomfortably large. So far it seems that using a separate JavaScript file as essentially an "include file", even though not officially spoken of that way in the online discussions, apparently works OK as a place to stow a set of functions to make editing more humane.
 
 Let's call this v0.4, commit it and move on to refining the controls.
+
+OK, I've now got a pretty much complete set of basic controls in a separate file ("controls.js") consisting of:
+1) a label that displays a given image file
+2) a horizontal slider and a vertical slider that make a "track slot" along which a given image slides to change the current value of the control
+3) a button that has the appearance of a given image file
+
+All of these are nicely responsive to the changing geometry of the browser window.
+All of these can be made to disappear and reappear.
+The sliders call a handler whenever there's a change of value.
+The button calls a handler whenever it is "pressed" and maintains a pollable flag indicating whether or not the button is being "held down".
+The "controls.js" file is fairly nicely commented and pretty much complete subject to future needs for additional or modified controls.
+
+I'm going to call this v0.5 and move on to implementing a data base capability to allow players to store and retrieve information
+

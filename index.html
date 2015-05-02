@@ -40,14 +40,17 @@
 			var t3Controls;
 			init();
 			animate();
-			function showClickHandler1( argument ) {
-				devMsg.innerHTML = "1" + argument;
+			function showClickHandler1() {
+				devMsg.innerHTML = "1";
 			}
-			function showClickHandler2( argument ) {
-				devMsg.innerHTML = "2" + argument;
+			function showClickHandler2() {
+				devMsg.innerHTML = "2";
 			}
-			function showClickHandler3( argument ) {
-				devMsg.innerHTML = "3" + argument;
+			function showClickHandler3() {
+				devMsg.innerHTML = "3";
+			}
+			function showSliderChange( argument ) {
+				devMsg.innerHTML = "Slider moved to " + argument.toFixed( 2 );
 			}
 			function init() {
 				scene = new THREE.Scene();
@@ -162,17 +165,19 @@
 						e.preventDefault();
 				}
 
-				var testButtonCore = new simpleButton( "#ff00ff", "core", 0.1, 0.2, 0.2, 0.2, showClickHandler1 );
-				testLabelCore = new horizontalLabel( "#cc00cc", "C123", "core", 0.1, 0.4, 0.2, 0.1 );
+				var testButtonCore = new imageButton( "art/yellowButton.png", "core", 0.1, 0.2, 0.2, 0.2, "-", showClickHandler1 );
+				horizontalTestLabel = new imageLabel( "art/HLabel.jpg", "opth", 0.1, 0.2, 0.5, 0.3 );
+				verticalTestLabel = new imageLabel( "art/VLabel.jpg", "optv", 0.1, 0.2, 0.2, 0.4 );
 
 				leftValue = 0; rightValue = 100;
 				counter = 0;
-				testSliderCore = new horizontalSlider( "#cc0088", "#440044", leftValue, rightValue, 25, "core", 0.15, 0.07, 0.3, 0.7, 0.5 );
+				testSliderCore = new horizontalSlider( "art/Slider1.png", "#440044", leftValue, rightValue, 25, "core", 0.3, 0.1, 0.2, 0.6, 0.5, showSliderChange );
+				testSliderOptV = new verticalSlider( "art/Slider1.png", "#660088", 0, 250, 25, "optv", 0.3, 0.1, 0.2, 0.6, 0.5, showSliderChange );
 
-				testBigSlider = new horizontalSlider( "#cc0088", "#440044", leftValue, rightValue, 25, "rendererDomElement", 0.15, 0.07, 0.3, 0.7, 0.5 );
-
-				var testButtonOptH = new simpleButton( "#00ffff", "opth", 0.2, 0.4, 0.2, 0.2, showClickHandler2 );
-				var testButtonOptV = new simpleButton( "#ffff00", "optv", 0.3, 0.4, 0.2, 0.2, showClickHandler3 );
+//				var testButtonOptH = new imageButton( "art/yellowButton.png", "opth", 0.7, 0.3, 0.2, 0.2, "H", showClickHandler2 );
+				var testButtonOptH = new imageButton( "art/yellowButton.png", "opth", 0.7, 0.3, 0.2, 0.2, "H", testSliderCore.deactivate );
+//				var testButtonOptV = new imageButton( "art/yellowButton.png", "optv", 0.3, 0.7, 0.2, 0.2, "W", showClickHandler3 );
+				var testButtonOptV = new imageButton( "art/yellowButton.png", "optv", 0.3, 0.7, 0.2, 0.2, "W", testSliderCore.activate );
 
 			}
 			function updateRenderingGeometry() {
