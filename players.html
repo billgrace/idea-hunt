@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>explore a gallery of selves</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style type="text/css">
+		body {
+			margin: 0px;
+			background-color: #cff;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript" src="three.min.js"></script>
+	<script type="text/javascript" src="stats.min.js"></script>
+	<script type="text/javascript" src="controls.js"></script>
+	<script type="text/javascript">
+		var totalFrameCount = 0;
+		var msgDiv;
+		var fullScreenContainer;
+		var galleryDiv, galleryWidth, galleryHeight;
+		var galleryLeftMask, galleryRightMask, galleryWindowWidth;
+		var galleryBackgroundColor = "#40c080";
+		var mugShotWidth, mugShotHeight;
+		var lastUsedMugShot, currentlySelectedMugShotIndex, aMugShotIsCurrentlySelected;
+		var galleryAspect, galleryAspects = {
+			wide: "wide",
+			medium: "medium",
+			narrow: "narrow"
+		};
+		var galleryTotalNumberOfMugShots, galleryVisibleNumberOfMugShots, galleryVisibleMugShotsOffset;
+		var showGalleryButton;
+		var galleryIsDormant = true;
+		var galleryIsBeingTouched = false;
+		var galleryTouchStartPoint, galleryTouchStartTime;
+		var galleryVelocity = 1;
+		var selfNameList = [];
+		var mugShotList = [];
+		init();
+		animate();
+		function onWindowResize() {
+			sizeTheGallery();
+			showTheGallery();
+		}
+		function fetchMugShotCollection() {
+			selfNameList.push( 'Happy', 'Sleepy', 'Sad', 'Grumpy', 'Dopey', 'Atsign', 'Copyright', 'Omega', 'Oomlaut-O', 'Theta' );
+			galleryTotalNumberOfMugShots = selfNameList.length;
+			for( var i = 0; i < galleryTotalNumberOfMugShots; i++ ) {
+				mugShotList.push( new mugShot( selfNameList[ i ] ) );
+				mugShotList[ i ].cntnr.id = "mugShot" + i;
+				mugShotList[ i ].cntnr.addEventListener( "mousedown", onMugMouseDown );
+				mugShotList[ i ].cntnr.addEventListener( "touchstart", onMugMouseDown );
+			}
+			aMugShotIsCurrentlySelected = false;
+			galleryVisibleMugShotsOffset = 0.0;
+			lastUsedMugShot = 5;
+		}
+		function storeMugShotCollection() {
+		}
+		function onShowGalleryClick( e ) {
+			if( galleryDiv.style.display == "none" ) {
+				sizeTheGallery();
+				showTheGallery();
+			} else {
+				hideTheGallery();
+			}
+		}
+		function sizeTheGallery() {
+			var winWidth = window.innerWidth;
+			var winHeight = window.innerHeight;
+			var winAspectRatio = winWidth / winHeight;
+			if( winAspectRatio > 1.5 ) {
+				// wide
+				galleryAspect = galleryAspects.wide;
+				galleryVisibleNumberOfMugShots = 5;
+				galleryHeight = ( ( 0.4 * winHeight ) | 0 );
+				mugShotHeight = galleryHeight;
+				mugShotWidth = ( ( mugShotHeight / 2 ) | 0 );
+				galleryWindowWidth = ( ( mugShotWidth * galleryVisibleNumberOfMugShots ) | 0 );
+				galleryWidth = ( ( galleryWindowWidth + mugShotWidth * 2 ) | 0 );
+			} else  if( winAspectRatio > 0.95 ) {
+				// medium
+				galleryAspect = galleryAspects.medium;
+				galleryVisibleNumberOfMugShots = 4;
+				galleryWidth = ( ( 0.9 * winWidth ) | 0 );
+				mugShotWidth = ( ( galleryWidth / ( galleryVisibleNumberOfMugShots + 2 ) ) | 0 );
+				mugShotHeight = ( mugShotWidth * 2 ) | 0;
+				galleryWindowWidth = ( mugShotWidth * galleryVisibleNumberOfMugShots ) | 0;
+				galleryHeight = mugShotHeight;
+			} else {
+				// narrow
+				galleryAspect = galleryAspects.narrow;
+				galleryVisibleNumberOfMugShots = 3;
+				galleryWidth = ( ( 0.95 * winWidth ) | 0 );
+				mugShotWidth = ( ( galleryWidth / ( galleryVisibleNumberOfMugShots + 2 ) ) | 0 );
+				mugShotHeight = ( ( 2 * mugShotWidth ) | 0 );
+				galleryHeight = mugShotHeight;
+				galleryWindowWidth = ( ( mugShotWidth * galleryVisibleNumberOfMugShots ) | 0 );
+			}
+			galleryLeftMask.style.height = galleryRightMask.style.height = galleryDiv.style.height = "0" + galleryHeight + "px";
+			galleryDiv.style.top = "0" + ( ( 0.1 * winHeight ) | 0 ) + "px";
+			galleryLeftMask.style.top = galleryRightMask.style.top = "0px";
+			galleryDiv.style.width = "0" + galleryWidth + "px";
+			galleryLeftMask.style.width = galleryRightMask.style.width = "0" + ( mugShotWidth | 0 ) + "px";
+			galleryDiv.style.left = "0" + ( ( ( winWidth - galleryWidth ) / 2 ) | 0 ) + "px";
+			galleryLeftMask.style.left = "0px";
+			galleryRightMask.style.left = "0" + ( ( galleryWidth - mugShotWidth ) | 0 ) + "px";
+		}
+		function hideTheGallery() {
+			galleryDiv.style.display = "none";
+			galleryIsDormant = true;
+		}
+		function changeGalleryOffset( changeAmount ) {
+			galleryVisibleMugShotsOffset += changeAmount;
+			if( galleryVisibleMugShotsOffset >= galleryTotalNumberOfMugShots ) {
+				galleryVisibleMugShotsOffset -= galleryTotalNumberOfMugShots;
+			}
+			if( galleryVisibleMugShotsOffset < 0 ) {
+				galleryVisibleMugShotsOffset +=  galleryTotalNumberOfMugShots;
+			}
+		}
+		function showTheGallery() {
+			// Make the gallery visible
+			galleryDiv.style.display = "block";
+			galleryIsDormant = false;
+			// On the entire line of mugshots, those with index less than the integer part of offset are hidden "to the left".
+			// ...those with index greater than the integer part of offset PLUS the visible width (measured in mugshots) are hidden "to the right".
+			// ...those between these two get displayed.
+			// Minimum value of offset is zero which puts index[0] mugshot at left of visible width
+			// Maximum value of offset is (almost) the number of mug shots, so when offset is more
+			//  than number of mug shots less visible gallery width, some mug shots from the lowest
+			//  index positions must be appended to the visible end of the array to provide the
+			//  effect of rolling right past the upper boundary.
+			// When incrementing offset actually hits the number of mug shots + 1, it becomes zero again.
+			// When decrementing offset actually drops below zero, it gets the number of mug shots + 1 added to it.
+			var offsetInteger = galleryVisibleMugShotsOffset | 0;
+			var offsetFraction = galleryVisibleMugShotsOffset - offsetInteger;
+			// if total mugshots <= visible#mugshots simply show them all, centered in the window
+			// else for offset up to offset + visible#, show mugshots with starters substituting for indexes beyond number on list
+			if( galleryTotalNumberOfMugShots <= galleryVisibleNumberOfMugShots ) {
+				// no motion, just show them all centered in the window
+			} else {
+				// allow changing offset to scroll the mugshot list around in the visible window
+				// first turn off any mugshots "left of" offset
+				for( var i = 0; i < offsetInteger; i++ ) {
+					mugShotList[ i ].cntnr.style.display = "none";
+				}
+				// now turn on the mugshots belonging in the window and place them
+				for( var i = offsetInteger; i <= ( offsetInteger + galleryVisibleNumberOfMugShots + 1 ); i++ ) {
+					if( i < galleryTotalNumberOfMugShots )
+						var j = i;
+					else
+						var j = i - galleryTotalNumberOfMugShots;
+					mugShotList[ j ].cntnr.style.display = "block";
+					mugShotList[ j ].cntnr.style.top = "0px";
+					mugShotList[ j ].cntnr.style.height = "0" + ( mugShotHeight ) + "px";
+					mugShotList[ j ].cntnr.style.width = "0" + ( mugShotWidth ) + "px";
+					mugShotList[ j ].cntnr.style.left = "0" + ( mugShotWidth * ( 1 + i - offsetInteger - offsetFraction ) | 0 ) + "px";
+					if( mugShotList[ j ].isSelected )
+						mugShotList[ j ].cntnr.style.borderWidth = "2px";
+					else
+						mugShotList[ j ].cntnr.style.borderWidth = "0px";
+				}
+				// lastly, turn off any mugshots to the "right of" the window
+				for( var i = ( offsetInteger + galleryVisibleNumberOfMugShots + 1 ); i < galleryTotalNumberOfMugShots; i++ ) {
+					mugShotList[ i ].cntnr.style.display = "none";
+				}
+			}
+		}
+		function onMugMouseDown( e ) {
+			var clickedMugShotIndex = parseInt( e.currentTarget.id.substring( 7 ) );
+			for( var i = 0; i < galleryTotalNumberOfMugShots; i++ )
+				mugShotList[ i ].isSelected = false;
+			currentlySelectedMugShotIndex = clickedMugShotIndex;
+			mugShotList[ clickedMugShotIndex ].isSelected = true;
+			aMugShotIsCurrentlySelected = true;
+		}
+		function onGalleryMouseDown( e ) {
+			e.preventDefault();
+			galleryIsBeingTouched = true;
+			galleryTouchStartPoint = e.clientX;
+			galleryTouchStartTime = Date.now()
+			galleryVelocity = 0;
+		}
+		function onGalleryMouseMove( e ) {
+			if( !galleryIsBeingTouched ) return;
+			e.preventDefault();
+			var galleryCurrentTouchPoint = e.clientX;
+			var galleryCurrentTouchTime = Date.now();
+			if( galleryCurrentTouchTime == galleryTouchStartTime ) return;
+			galleryVelocity = -2 * ( galleryCurrentTouchPoint - galleryTouchStartPoint ) / ( galleryCurrentTouchTime - galleryTouchStartTime )
+		}
+		function onWindowMouseUp( e ) {
+			e.preventDefault();
+			galleryIsBeingTouched = false;
+		}
+		function onGalleryTouchStart( e ) {
+			e.preventDefault();
+			galleryIsBeingTouched = true;
+			galleryTouchStartPoint = e.touches[ 0 ].clientX;
+			galleryTouchStartTime = Date.now()
+			galleryVelocity = 0;
+		}
+		function onGalleryTouchMove( e ) {
+			if( !galleryIsBeingTouched ) return;
+			e.preventDefault();
+			var galleryCurrentTouchPoint = e.touches[ 0 ].clientX;
+			var galleryCurrentTouchTime = Date.now();
+			galleryVelocity = -10 * ( galleryCurrentTouchPoint - galleryTouchStartPoint ) / ( galleryCurrentTouchTime - galleryTouchStartTime )
+		}
+		function onGalleryTouchEnd( e ) {
+			e.preventDefault();
+			galleryIsBeingTouched = false;
+		}
+		function init() {
+			fullScreenContainer = document.createElement( "div" );
+			document.body.appendChild( fullScreenContainer );
+			fullScreenContainer.id = "fsc";
+			fullScreenContainer.style.cssText = "position:absolute;width:100%;height:100%";
+			msgDiv = document.createElement( "div" );
+			fullScreenContainer.appendChild ( msgDiv );
+			msgDiv.style.cssText = "position:absolute;left:5%;bottom:2%;width:90%;height:10%;background-color:#ddd;text-align:center";
+			galleryDiv = document.createElement( "div" );
+			galleryDiv.id = "galleryId";
+			galleryDiv.style.display = "none";
+			document.body.appendChild( galleryDiv );
+			galleryDiv.style.cssText = "position:absolute;overflow:hidden;border-width:2px;border-style:solid;border-color:#4c8";
+			galleryDiv.style.backgroundColor = galleryBackgroundColor;
+			galleryLeftMask = document.createElement( "div" );
+			galleryLeftMask.id = "galleryLeftMaskId";
+			galleryDiv.appendChild( galleryLeftMask );
+			galleryLeftMask.style.cssText = "position:absolute;z-index:1";
+			galleryLeftMask.style.backgroundColor = galleryBackgroundColor;
+			galleryRightMask = document.createElement( "div" );
+			galleryRightMask.id = "galleryRightMaskId";
+			galleryDiv.appendChild( galleryRightMask );
+			galleryRightMask.style.cssText = "position:absolute;z-index:1";
+			galleryRightMask.style.backgroundColor = galleryBackgroundColor;
+			fetchMugShotCollection();
+			showGalleryButton = new imageButton( "art/yellowButton.png", "fsc", 0.1, 0.8, 0.1, 0.1, "H", onShowGalleryClick );
+
+			stats = new Stats();
+			stats.domElement.style.position = "absolute";
+			stats.domElement.style.top = "0px";
+			document.body.appendChild( stats.domElement );
+
+			window.addEventListener( "resize", onWindowResize, false );
+			window.addEventListener( "orientationchange", onWindowResize, false );
+
+			galleryDiv.addEventListener( "mousedown", onGalleryMouseDown );
+			galleryDiv.addEventListener( "mousemove", onGalleryMouseMove );
+			window.addEventListener( "mouseup", onWindowMouseUp );
+			galleryDiv.addEventListener( "touchstart", onGalleryTouchStart );
+			galleryDiv.addEventListener( "touchmove", onGalleryTouchMove );
+			galleryDiv.addEventListener( "touchend", onGalleryTouchEnd );
+
+			onWindowResize();
+		}
+		// Given a player's name, build that player's mugshot div
+		function mugShot( playerName ) {
+			var inst = this;
+			var hostElement = document.getElementById( "galleryId" );
+			this.cntnr = document.createElement( "div" );
+			// document.body.appendChild( this.cntnr );
+			hostElement.appendChild( this.cntnr );
+			this.cntnr.style.cssText = "position:absolute;border-width:0;border-style:solid;border-color:yellow";
+			this.cntnr.style.display = "none";
+			this.image = document.createElement( "img" );
+			this.cntnr.appendChild( this.image );
+			this.image.src = "art/" + playerName + ".jpg";
+			this.image.style.width = "100%";
+			this.image.style.height = "75%";
+			this.nam = document.createElement( "div" );
+			this.nam.style.cssText = "text-align:center;width:100%;height:25%;font-size:2.5vw;overflow:hidden";
+			this.nam.innerHTML = playerName;
+			this.cntnr.appendChild( this.nam );
+			this.isSelected = false;
+		}
+		function animate() {
+			stats.update();
+			if( galleryDiv.style.display == "block" ) {
+				changeGalleryOffset( galleryVelocity / 60 );
+				showTheGallery();
+			}
+			requestAnimationFrame( animate );
+		}
+	</script>
+</body>
+</html>

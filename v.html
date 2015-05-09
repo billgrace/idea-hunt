@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>video capture</title>
+</head>
+<body>
+	<div>
+		<video id="videoElement" width="320" height="240" autoplay>
+		</video>
+	</div>
+	<div>
+		<canvas id="photoCanvas" width="320" height="240">
+		</canvas>
+	</div>
+	<div>
+		<canvas id="controlCanvas" width="320" height="100" >
+		</canvas>
+	</div>
+	<script type="text/javascript" src="controls.js"></script>
+	<script type="text/javascript">
+		var photoButton;
+		init();
+		function init() {
+			photoButton = new imageButton( "art/yellowButton.png", "controlCanvas", 0.1, 0.1, 0.3, 0.3, "H", onPhotoButton );
+			navigator.webkitGetUserMedia( { video:true }, onMediaSuccess, onMediaFail );
+		}
+		function onMediaSuccess( stream ) {
+			document.getElementById( "videoElement" ).src = URL.createObjectURL( stream );
+		}
+		function onMediaFail() {
+			alert( "failed to connect video stream" );
+		}
+		function onPhotoButton( e ) {
+			var cvs = document.getElementById( "photoCanvas" );
+			var vidstrm = document.getElementById( "videoElement" );
+			cvs.getContext( "2d" ).drawImage( vidstrm, 0, 0, 320, 240 );
+		}
+	</script>
+</body>
+</html>

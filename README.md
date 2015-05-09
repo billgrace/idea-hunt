@@ -44,5 +44,31 @@ The sliders call a handler whenever there's a change of value.
 The button calls a handler whenever it is "pressed" and maintains a pollable flag indicating whether or not the button is being "held down".
 The "controls.js" file is fairly nicely commented and pretty much complete subject to future needs for additional or modified controls.
 
-I'm going to call this v0.5 and move on to implementing a data base capability to allow players to store and retrieve information
+I'm going to call this v0.5 and move on to implementing a data base capability to allow players to store and retrieve information.
 
+Ultimately I'm going to want database capabilities on both the client (browser) and server (astutekid.com) ends but for now, I'll work only with the client/browser end and leave the server side for future development.
+
+IndexedDb appears to be the way to go for this.
+
+So, let's implement a modest starter set of local data and call it good for now:
+1) a list of players
+2) the name of each player
+3) the player's choice of self (from a small set of available, pre-packaged options)
+4) the player's progress in each available topic and sub-topic
+5) the player's cumulative score by topic, sub-topic and overall total
+
+I'll need a set of pages to handle:
+1) view the list of players - I'd like something like the spinners often used for dates and times
+2) add a player - pretty much the "edit player" page with defaults to start and "add" in lieu of "change"
+3) remove a player - only makes the player dormant allowing "recall" if desired later. Permanent removal, too, with strong confirmation.
+4) edit a player - need a page for this
+5) select a player with which to play - same as (1)...
+
+Also, a way to track progress and scoring.... this should probably wait until we get the game into a playable stage.
+Also a way for the player to see his/her present progress and scores.... nice if this is the same "place" as for editing a player.
+
+Time to add another file: "players.js".
+
+OK, a very primitive player gallery is there (in a separate html file just now) and we can launch and move although not much more than simply drop with some forward velocity....
+
+However, tomorrow there's a chance to let the boys take a look at it and hopefully comment so we're wrapping it up as is to be v0.6 for now.
