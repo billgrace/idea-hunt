@@ -72,3 +72,29 @@ Time to add another file: "players.js".
 OK, a very primitive player gallery is there (in a separate html file just now) and we can launch and move although not much more than simply drop with some forward velocity....
 
 However, tomorrow there's a chance to let the boys take a look at it and hopefully comment so we're wrapping it up as is to be v0.6 for now.
+
+OK, Linda's comment "Is there some opponent player's must deal with?" was followed fairly quickly by Aaron's "Can you die?" and Will's "How does the game end?". Both boys appeared to enjoy the game in general even though it's in a very rudimentary level of development. They wanted to be able to put in their own pictures in place of my mug and Linda thought it best to leave the "self" appearance simply as cartoonish things a la Wii's Mii.
+
+So, new goals...
+1) Add some kind of enemy that must be fought
+2) Bring the mug shot jpg self gallery into the game (presently a separate HTML)
+3) Put cartoon selves on the list for future implementation
+4) Put "live/die/score/screw-up/game-over" features on the future list
+5) Add flying navigation via buttons, keys and orbiting
+6) Attach the orbiting to just one view rather than the entire screen and drop the "on/off" button for it
+
+Flying controls might be:
+up/down (pitch control)
+left/right (yaw control)
+(roll control should likely be automatic based on yaw)
+fast/slow (speed control)
+keyboard usage in minecraft is "W" => forward, "S" => backward, "A" => move left, "D" => move right so lets start with:
+up = A, down = S, left = A, right = D
+
+Don't have the keys in there yet but the kids are coming soon.....
+Crude click-arrows for 3 axis "kicks" of velocity change plus player mug selection is working in a crude way.
+No speed control yet or actual flying sensation - need to re-do how the cameras track while moving.
+Need to add a way to find yourself when you lose sight of the little green dot.
+Let's call this V0.7 -
+
+

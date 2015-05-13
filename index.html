@@ -19,7 +19,15 @@
 		<script type="text/javascript" src="cannon.min.js"></script>
 		<script type="text/javascript" src="CannonDebugRenderer.js"></script>
 		<script type="text/javascript" src="controls.js"></script>
+		<script type="text/javascript" src="players.js"></script>
 		<script type="text/javascript">
+			var gameMode, gameModes = {
+				playerAffairs: "playerAffairs",
+				playingTheGame: "playingTheGame",
+				checkingMyScore: "checkingMyScore"
+			};
+			var debuggingModeIsOn = false;
+			var playerGallery;
 			var counter, leftValue, rightValue;
 			var scene, renderer;
 			var devMsg;
@@ -30,21 +38,22 @@
 			var viewWindowWidth, viewWindowHeight, viewWindowLeft, viewWindowTop, viewWindowBottom, viewWindowRight;
 			var navWindowWidth, navWindowHeight, navWindowLeft, navWindowTop, navWindowBottom, navWindowRight;
 			var selfWindowWidth, selfWindowHeight, selfWindowLeft, selfWindowTop, selfWindowBottom, selfWindowRight;
+			var viewWindowOrbitElement, navWindowOrbitElement, selfWindowOrbitElement;
 			var coreWindowContainer, coreWindowWidth, coreWindowHeight, coreWindowLeft, coreWindowTop, coreWindowBottom, coreWindowRight;
 			var optHWindowContainer, optHWindowWidth, optHWindowHeight, optHWindowLeft, optHWindowTop, optHWindowBottom, optHWindowRight;
 			var optVWindowContainer, optVWindowWidth, optVWindowHeight, optVWindowLeft, optVWindowTop, optVWindowBottom, optVWindowRight;
 			var topicHorizonMesh, topicHorizonTexture;
 			var platformMesh;
-			var launcherMesh, launcherMeshHomePosition;
+			var launcherMesh, launcherMeshHomePosition, launcherToSelfOffset;
 			var selfGeometry, selfMaterial, selfMesh, selfBody, selfMeshHomePosition;
-			var t3Controls;
+			var selfMaterialArray = [];
+			var viewOrbitControls, navOrbitControls, selfOrbitControls;
 			var launchButton, launchButtonLabel;
 			var notYetLaunched;
 			var bottomLaunchPowerSliderValue = 0, topLaunchPowerSliderValue = 100, startingLaunchPowerSliderValue = 0;
-			var launchPowerSlider, launchSliderLabel, launchPowerMeter;
-			var toggleOrbitButton, toggleOrbitButtonLabel;
-			var fetchSelfButton, fetchSelfButtonLabel;
-			var kickForwardButton, kickBackwardButton;
+			var fetchSelfButton;
+			// var kickForwardButton, kickBackwardButton;
+			var gameModeButton, playerModeButton;
 			var caWorld;
 			var cannonDebugThreeJsOutliner;
 
@@ -69,7 +78,9 @@
 				caWorld = new CANNON.World();
 				caWorld.gravity.set( 0, -980, 0 ); // (gravity in centimeters per second pointing "down")
 				caWorld.broadphase = new CANNON.NaiveBroadphase();
-				cannonDebugThreeJsOutliner = new THREE.CannonDebugRenderer( scene, caWorld );
+				if( debuggingModeIsOn ) {
+					cannonDebugThreeJsOutliner = new THREE.CannonDebugRenderer( scene, caWorld );
+				}
 
 				viewBackgroundColor = new THREE.Color().setRGB( 0.1, 0.8, 0.1 );
 				viewCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 1000000 );
@@ -79,10 +90,22 @@
 				viewCamLight.rotation.copy( viewCamera.rotation );
 				scene.add( viewCamLight );
 
+				viewWindowOrbitElement = document.createElement( "div" );
+				document.body.appendChild( viewWindowOrbitElement );
+				viewWindowOrbitElement.id = "viewOrbitElement";
+				viewWindowOrbitElement.style.cssText = "position:absolute;display:block";
+				navWindowOrbitElement = document.createElement( "div" );
+				document.body.appendChild( navWindowOrbitElement );
+				navWindowOrbitElement.id = "navOrbitElement";
+				navWindowOrbitElement.style.cssText = "position:absolute;display:block";
+				selfWindowOrbitElement = document.createElement( "div" );
+				document.body.appendChild( selfWindowOrbitElement );
+				selfWindowOrbitElement.id = "selfOrbitElement";
+				selfWindowOrbitElement.style.cssText = "position:absolute;display:block";
+
 				navBackgroundColor = new THREE.Color().setRGB( 0.1, 0.2, 0.7 );
 				navCamera = new THREE.PerspectiveCamera( 60, 1.3, 1, 1000000 );
-				navCamera.position.set( 0, 1200, 0 );
-				navCamera.rotation.x = -Math.PI/2;
+				homeTheNavCamera();
 				navCamLight = new THREE.DirectionalLight( 0x888888 );
 				navCamLight.position.copy( navCamera.position );
 				navCamLight.rotation.copy( navCamera.rotation );
@@ -128,14 +151,13 @@
 				launcherMeshHomePosition.set( 0, 25, 125 );
 				launcherMesh.position.copy( launcherMeshHomePosition );
 				launcherMesh.rotation.x = Math.PI / 2;
-				var selfMaterialArray = [];
 				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRightV0.jpg' ) }));
 				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfLeftV0.jpg' ) }));
 				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfTopV0.jpg' ) }));
 				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfBottomV0.jpg' ) }));
 				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRearV0.jpg' ) }));
-				// selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfFrontV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/Happy.jpg' ) }));
+				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfFrontV0.jpg' ) }));
+				// selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/Happy.jpg' ) }));
 				var selfMeshMaterial = new THREE.MeshFaceMaterial(selfMaterialArray);
 				var selfWidth = 50, selfHeight = 100, selfDepth = 56;
 				var selfMeshGeometry = new THREE.BoxGeometry( selfWidth, selfHeight, selfDepth );
@@ -143,6 +165,8 @@
 				selfMesh.position.set( 0, 50, 28 );
 				selfMeshHomePosition = new THREE.Vector3;
 				selfMeshHomePosition.copy( selfMesh.position );
+				launcherToSelfOffset = new THREE.Vector3;
+				launcherToSelfOffset.subVectors( selfMesh.position, launcherMesh.position );
 
 				var caSelfMaterial = new CANNON.Material( "caSelfMaterial" );
 				var caSelfShape = new CANNON.Box( new CANNON.Vec3( selfWidth/2, selfHeight/2, selfDepth/2 ) );
@@ -158,23 +182,36 @@
 				scene.add( launcherMesh );
 				scene.add( selfMesh );
 
-				stats = new Stats();
-				stats.domElement.style.position = "absolute";
-				stats.domElement.style.top = "0px";
-				document.body.appendChild( stats.domElement );
+				viewOrbitControls = new THREE.OrbitControls( viewCamera, viewWindowOrbitElement );
+				viewOrbitControls.name = "viewOrbitControls";
+				viewOrbitControls.damping = 0.2;
+				viewOrbitControls.addEventListener( 'change', render );
+				navOrbitControls = new THREE.OrbitControls( navCamera, navWindowOrbitElement );
+				navOrbitControls.name = "navOrbitControls";
+				navOrbitControls.damping = 0.2;
+				navOrbitControls.addEventListener( 'change', render );
+				selfOrbitControls = new THREE.OrbitControls( selfCamera, selfWindowOrbitElement );
+				selfOrbitControls.name = "selfOrbitControls";
+				selfOrbitControls.damping = 0.2;
+				selfOrbitControls.addEventListener( 'change', render );
 
-				// create THREE orbit controls to manage orientation, view, scale....
-				t3Controls = new THREE.OrbitControls( viewCamera );
-				t3Controls.name = "t3Controls";
-				t3Controls.damping = 0.2;
-				t3Controls.addEventListener( 'change', render );
+				// Create the player gallery
+				playerGallery = new IdeaHuntPlayerGallery();
 
-				devMsg = document.createElement( "div" );
-				devMsg.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c00;background-color:#f88";
-				devMsg.style.left = stats.domElement.style.width;
-				devMsg.style.height = "20px";
-				devMsg.style.top = "0px";
-				document.body.appendChild( devMsg );
+				if( debuggingModeIsOn ) {
+					stats = new Stats();
+					stats.domElement.style.position = "absolute";
+					stats.domElement.style.top = "0px";
+					document.body.appendChild( stats.domElement );
+
+					devMsg = document.createElement( "div" );
+					devMsg.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c00;background-color:#f88";
+					devMsg.style.left = stats.domElement.style.width;
+					devMsg.style.height = "20px";
+					devMsg.style.top = "0px";
+					document.body.appendChild( devMsg );
+				}
+
 				updateRenderingGeometry();
 				render();
 
@@ -182,92 +219,135 @@
 				window.addEventListener( "orientationchange", onWindowResize, false );
 
 
-				launchButton = new imageButton( "art/launchButton.png", "optv", 0.5, 0.8, 0.4, 0.1, " ", launchButtonClickHandler );
-				launchButtonLabel = new imageLabel( "art/launchButtonLabel.png", "optv", 0.05, 0.8, 0.4, 0.1 );
+				launchButton = new imageButton( "art/launchButton.png", "optv", 0.5, 0.85, 0.4, 0.1, " ", launchButtonClickHandler );
+				launchButtonLabel = new imageLabel( "art/launchButtonLabel.png", "optv", 0.05, 0.85, 0.4, 0.1 );
 
-				launchPowerSlider = new verticalSlider( "art/launchPowerSlider.png", "optv", 0.75, 0.17, 0.4, 0.15, 0.35, "#662244", bottomLaunchPowerSliderValue, topLaunchPowerSliderValue, startingLaunchPowerSliderValue, launchPowerSliderChangeHandler );
-				launchSliderLabel = new imageLabel( "art/launchPowerSliderLabel.png", "optv", 0.1, 0.1, 0.4, 0.5 );
-				launchPowerMeter = new textBox( " ", "optv", 0.25, 0.7, 0.5, 0.05, "blue", "2.5", "white", 2, "black" );
+				launchPowerSlider = new verticalSlider( "art/launchPowerSlider.png", "optv", 0.75, 0.23, 0.4, 0.15, 0.35, "#662244", bottomLaunchPowerSliderValue, topLaunchPowerSliderValue, startingLaunchPowerSliderValue, launchPowerSliderChangeHandler );
+				launchSliderLabel = new imageLabel( "art/launchPowerSliderLabel.png", "optv", 0.1, 0.16, 0.4, 0.5 );
+				launchPowerMeter = new textBox( " ", "optv", 0.25, 0.73, 0.5, 0.05, "blue", "2.5", "white", 2, "black" );
 
-				toggleOrbitButton = new imageButton( "art/yellowButton.png", "core", 0.7, 0.1, 0.2, 0.2, "H", toggleOrbitButtonHandler );
-				toggleOrbitButtonLabel = new textBox( "Turn Orbiting ...", "core", 0.05, 0.15, 0.45, 0.1, "lightgreen", "1.5", "gray", 1, "black" );
+				fetchSelfButton = new imageButton( "art/resetButton.png", "optv", 0.05, 0.02, 0.4, 0.4, "W", fetchSelfButtonClickHandler );
 
-				fetchSelfButton = new imageButton( "art/yellowButton.png", "core", 0.7, 0.4, 0.2, 0.2, "H", fetchSelfButtonHandler );
-				fetchSelfButtonHandler = new textBox( "Return to launcher", "core", 0.05, 0.45, 0.45, 0.1, "lightblue", "1.5", "gray", 1, "black" );
+				gameModeButton = new imageButton( "art/gameModeButton.png", "core", 0.55, 0.1, 0.35, 0.25, "Hx", gameModeButtonClickHandler );
+				playerModeButton = new imageButton( "art/playerModeButton.png", "core", 0.1, 0.1, 0.35, 0.25, "Hx", playerModeButtonClickHandler );
 
-				kickForwardButton = new imageButton( "art/ascendingArrow.png", "opth", 0.7, 0.1, 0.3, 0.3, "H", kickFowardButtonHandler );
-				kickBackwardButton = new imageButton( "art/ascendingArrowReversed.png", "opth", 0.4, 0.1, 0.3, 0.3, "H", kickBackwardButtonHandler );
+				leftArrowButton = new imageButton( "art/leftArrowPerspective.png", "opth", 0.05, 0.35, 0.15, 0.3, "H", leftArrowButtonClickHandler );
+				rightArrowButton = new imageButton( "art/rightArrowPerspective.png", "opth", 0.35, 0.35, 0.15, 0.3, "H", rightArrowButtonClickHandler );
+				fartherArrowButton = new imageButton( "art/fartherArrowPerspective.png", "opth", 0.2, 0.1, 0.2, 0.3, "H", fartherArrowButtonClickHandler );
+				closerArrowButton = new imageButton( "art/closerArrowPerspective.png", "opth", 0.2, 0.7, 0.2, 0.3, "H", closerArrowButtonClickHandler );
+				upArrowButton = new imageButton( "art/upArrow.png", "opth", 0.7, 0.05, 0.15, 0.25, "H", upArrowButtonClickHandler );
+				downArrowButton = new imageButton( "art/downArrow.png", "opth", 0.7, 0.7, 0.15, 0.25, "H", downArrowButtonClickHandler );
 
-				turnOrbitingOff();
-
+				playerModeButtonClickHandler();
 			}
 
-				function homeTheViewCamera() {
-					viewCamera.position.set( 250, 100, 700 );
-					viewCamera.rotation.x = -Math.PI/10;
-					viewCamera.rotation.y = Math.PI/4;
+			function updateSelfFace() {
+				if( playerGallery.aPlayerMugShotIsCurrentlySelected ) {
+					selfMaterialArray[ 5 ].map = THREE.ImageUtils.loadTexture( "art/" + playerGallery.currentlySelectedPlayerName + ".jpg" );
+					selfMaterialArray[ 5 ].needsUpdate = true;
 				}
-				function homeTheSelfCamera() {
-					selfCamera.position.set( 0, 0, -1000 );
-					// selfCamera.rotation.set( 0, Math.PI, 0 );
-					selfCamera.rotation.set( 0, Math.PI, 0 );
-				}
-				function turnTheSelfCameraToLaunchPosition() {
-					selfCamera.rotation.set( 0, 0, 0 );
-				}
-				function trackTheSelfCameraToSelfMeshPosition() {
-					selfCamera.position.copy( selfMesh.position );
-					selfCamera.position.z -= 100;
-				}
-				function launchButtonClickHandler( e ) {
-					selfBody.velocity.z = -100 * launchPowerSlider.currentValue;
-					launcherMesh.position.copy( launcherMeshHomePosition );
-					launchPowerSlider.setSlider( launchPowerSlider.homeValue );
-					turnTheSelfCameraToLaunchPosition();
-					trackTheSelfCameraToSelfMeshPosition();
-					notYetLaunched = false;
-				}
-				function launchPowerSliderChangeHandler( e ) {
-					var launchPower = launchPowerSlider.currentValue;
-					launchPowerMeter.updateText( launchPower.toFixed( 0 ) + "%" );
-					launcherMesh.position.z = 125 + ( 2 * launchPower );
-				}
-				function turnOrbitingOn() {
-					t3Controls.enabled = true;
-					toggleOrbitButtonLabel.updateText( "Turn Orbiting OFF" );
-				}
-				function turnOrbitingOff() {
-					t3Controls.enabled = false;
-					toggleOrbitButtonLabel.updateText( "Turn Orbiting ON" );
-				}
-				function toggleOrbitButtonHandler( e ) {
-					if( t3Controls.enabled ) {
-						turnOrbitingOff();
-					} else {
-						turnOrbitingOn();
-					}
-				}
-				function fetchSelfButtonHandler( e ) {
-					notYetLaunched = true;
-					selfBody.velocity.set( 0, 0, 0 );
-					selfMesh.position.copy( selfMeshHomePosition );
-					selfBody.position.copy( selfMeshHomePosition );
-					homeTheViewCamera();
-					homeTheSelfCamera();
-					turnOrbitingOff();
-				}
-				function kickFowardButtonHandler( e ) {
-					var currentXvelocity = selfBody.velocity.x;
-					var currentYvelocity = selfBody.velocity.y;
-					var currentZvelocity = selfBody.velocity.z;
-					selfBody.velocity.set( currentXvelocity, currentYvelocity + 1000, currentZvelocity - 3000 );
-				}
-				function kickBackwardButtonHandler( e ) {
-					var currentXvelocity = selfBody.velocity.x;
-					var currentYvelocity = selfBody.velocity.y;
-					var currentZvelocity = selfBody.velocity.z;
-					selfBody.velocity.set( currentXvelocity, currentYvelocity + 1000, currentZvelocity + 5000 );
-				}
+			}
+			function playerModeButtonClickHandler() {
+				gameMode = gameModes.playerAffairs;
+				launchButton.deactivate();
+				launchButtonLabel.deactivate();
+				launchPowerSlider.deactivate();
+				launchSliderLabel.deactivate();
+				launchPowerMeter.deactivate();
+				fetchSelfButton.deactivate();
+				playerGallery.sizeThePlayerGallery();
+				playerGallery.showThePlayerGallery();
+			}
+			function gameModeButtonClickHandler() {
+				gameMode = gameModes.playingTheGame;
+				launchButton.activate();
+				launchButtonLabel.activate();
+				launchPowerSlider.activate();
+				launchSliderLabel.activate();
+				launchPowerMeter.activate();
+				fetchSelfButton.activate();
+				updateSelfFace();
+				playerGallery.hideThePlayerGallery();
+			}
+			function homeTheViewCamera() {
+				viewCamera.position.set( 250, 100, 700 );
+				viewCamera.rotation.x = -Math.PI/10;
+				viewCamera.rotation.y = Math.PI/4;
+			}
+			function homeTheNavCamera() {
+				navCamera.position.set( 0, 1200, 0 );
+				navCamera.rotation.x = -Math.PI/2;
+			}
+			function homeTheSelfCamera() {
+				selfCamera.position.set( 0, 0, -1000 );
+				selfCamera.rotation.set( 0, Math.PI, 0 );
+			}
+			function turnTheSelfCameraToLaunchPosition() {
+				selfCamera.rotation.set( 0, 0, 0 );
+			}
+			function trackTheSelfCameraToSelfMeshPosition() {
+				selfCamera.position.copy( selfMesh.position );
+				selfCamera.position.z -= 100;
+			}
+			function launchButtonClickHandler( e ) {
+				selfBody.velocity.z = -100 * launchPowerSlider.currentValue;
+				launcherMesh.position.copy( launcherMeshHomePosition );
+				launchPowerSlider.setSlider( launchPowerSlider.homeValue );
+				turnTheSelfCameraToLaunchPosition();
+				trackTheSelfCameraToSelfMeshPosition();
+				notYetLaunched = false;
+			}
+			function launchPowerSliderChangeHandler( e ) {
+				var launchPower = launchPowerSlider.currentValue;
+				launchPowerMeter.updateText( launchPower.toFixed( 0 ) + "%" );
+				launcherMesh.position.z = 125 + ( 2 * launchPower );
+				selfMesh.position.addVectors( launcherMesh.position, launcherToSelfOffset );
+			}
+			function fetchSelfButtonClickHandler( e ) {
+				notYetLaunched = true;
+				selfBody.velocity.set( 0, 0, 0 );
+				selfMesh.position.copy( selfMeshHomePosition );
+				selfBody.position.copy( selfMeshHomePosition );
+				homeTheViewCamera();
+				homeTheNavCamera();
+				homeTheSelfCamera();
+			}
+			function leftArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity - 1000, currentYvelocity, currentZvelocity );
+			}
+			function rightArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity + 1000, currentYvelocity, currentZvelocity );
+			}
+			function fartherArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity, currentYvelocity, currentZvelocity - 1000 );
+			}
+			function closerArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity, currentYvelocity, currentZvelocity + 1000 );
+			}
+			function upArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity, currentYvelocity + 1000, currentZvelocity );
+			}
+			function downArrowButtonClickHandler( e ) {
+				var currentXvelocity = selfBody.velocity.x;
+				var currentYvelocity = selfBody.velocity.y;
+				var currentZvelocity = selfBody.velocity.z;
+				selfBody.velocity.set( currentXvelocity, currentYvelocity - 1000, currentZvelocity );
+			}
 
 			function moveSelfBodyToMesh() {
 				selfBody.position.copy( selfMesh.position );
@@ -404,6 +484,18 @@
 				optVWindowContainer.style.top = "0"+optVWindowTop+"px";
 				optVWindowContainer.style.width = "0"+optVWindowWidth+"px";
 				optVWindowContainer.style.height = "0"+optVWindowHeight+"px";
+				viewWindowOrbitElement .style.left = "0"+viewWindowLeft+"px";
+				viewWindowOrbitElement.style.top = "0"+viewWindowTop+"px";
+				viewWindowOrbitElement.style.width = "0"+viewWindowWidth+"px";
+				viewWindowOrbitElement.style.height = "0"+viewWindowHeight+"px";
+				navWindowOrbitElement .style.left = "0"+navWindowLeft+"px";
+				navWindowOrbitElement.style.top = "0"+navWindowTop+"px";
+				navWindowOrbitElement.style.width = "0"+navWindowWidth+"px";
+				navWindowOrbitElement.style.height = "0"+navWindowHeight+"px";
+				selfWindowOrbitElement .style.left = "0"+selfWindowLeft+"px";
+				selfWindowOrbitElement.style.top = "0"+selfWindowTop+"px";
+				selfWindowOrbitElement.style.width = "0"+selfWindowWidth+"px";
+				selfWindowOrbitElement.style.height = "0"+selfWindowHeight+"px";
 			}
 			function onWindowResize() {
 				updateRenderingGeometry();
@@ -414,20 +506,32 @@
 				var timeStep = 1 / 60;
 				caWorld.step( timeStep );
 				moveSelfMeshToBody();
-				trackTheSelfCameraToSelfMeshPosition();
+				if( !notYetLaunched ) {
+					trackTheSelfCameraToSelfMeshPosition();
+				}
 			}
 			function animate() {
-				devMsg.innerHTML = "self position X/Y/Z: " + selfMesh.position.x.toFixed( 0 ) + "/" + selfMesh.position.y.toFixed( 0 ) + "/" + selfMesh.position.z.toFixed( 0 ) + ", dropping at: " + selfBody.velocity.y.toFixed( 1 );
-				t3Controls.update();
+				if( debuggingModeIsOn ) {
+					devMsg.innerHTML = "self position X/Y/Z: " + selfMesh.position.x.toFixed( 0 ) + "/" + selfMesh.position.y.toFixed( 0 ) + "/" + selfMesh.position.z.toFixed( 0 ) + ", dropping at: " + selfBody.velocity.y.toFixed( 1 );
+					stats.update();
+				}
+				viewOrbitControls.update();
+				navOrbitControls.update();
+				selfOrbitControls.update();
 				processPhysics();
-				cannonDebugThreeJsOutliner.update();
-				navCamera.position.copy( selfMesh.position );
-				navCamera.position.y += 1200;
+				if( debuggingModeIsOn ) {
+					cannonDebugThreeJsOutliner.update();
+				}
+				if( !notYetLaunched ) {
+					navCamera.position.copy( selfMesh.position );
+					navCamera.position.y += 1200;
+				}
+				playerGallery.updateGallery();
 				render();
-				stats.update();
 				requestAnimationFrame( animate );
 			}
 			function render() {
+				if( gameModes.playingTheGame != gameMode ) return;
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 				renderer.setViewport( viewWindowLeft, windowHeight - viewWindowBottom, viewWindowWidth, viewWindowHeight );
