@@ -1,564 +1,120 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Idea Hunt 0.3</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style type="text/css">
-			body {
-				margin: 0px;
-				background-color: #fff;
-				overflow: hidden;
-			}
-		</style>
-	</head>
-	<body>
-		<script type="text/javascript" src="three.min.js"></script>
-		<script type="text/javascript" src="stats.min.js"></script>
-		<script type="text/javascript" src="OrbitControls.js"></script>
-		<script type="text/javascript" src="cannon.min.js"></script>
-		<script type="text/javascript" src="CannonDebugRenderer.js"></script>
-		<script type="text/javascript" src="controls.js"></script>
-		<script type="text/javascript" src="players.js"></script>
-		<script type="text/javascript">
-			var gameMode, gameModes = {
-				playerAffairs: "playerAffairs",
-				playingTheGame: "playingTheGame",
-				checkingMyScore: "checkingMyScore"
-			};
-			var debuggingModeIsOn = false;
-			var playerGallery;
-			var counter, leftValue, rightValue;
-			var scene, renderer;
-			var devMsg;
-			var viewCamera, viewCamLight, viewBackgroundColor;
-			var navCamera, navCamLight, navBackgroundColor;
-			var selfCamera, selfCamLight, selfBackgroundColor;
-			var windowWidth, windowHeight;
-			var viewWindowWidth, viewWindowHeight, viewWindowLeft, viewWindowTop, viewWindowBottom, viewWindowRight;
-			var navWindowWidth, navWindowHeight, navWindowLeft, navWindowTop, navWindowBottom, navWindowRight;
-			var selfWindowWidth, selfWindowHeight, selfWindowLeft, selfWindowTop, selfWindowBottom, selfWindowRight;
-			var viewWindowOrbitElement, navWindowOrbitElement, selfWindowOrbitElement;
-			var coreWindowContainer, coreWindowWidth, coreWindowHeight, coreWindowLeft, coreWindowTop, coreWindowBottom, coreWindowRight;
-			var optHWindowContainer, optHWindowWidth, optHWindowHeight, optHWindowLeft, optHWindowTop, optHWindowBottom, optHWindowRight;
-			var optVWindowContainer, optVWindowWidth, optVWindowHeight, optVWindowLeft, optVWindowTop, optVWindowBottom, optVWindowRight;
-			var topicHorizonMesh, topicHorizonTexture;
-			var platformMesh;
-			var launcherMesh, launcherMeshHomePosition, launcherToSelfOffset;
-			var selfGeometry, selfMaterial, selfMesh, selfBody, selfMeshHomePosition;
-			var selfMaterialArray = [];
-			var viewOrbitControls, navOrbitControls, selfOrbitControls;
-			var launchButton, launchButtonLabel;
-			var notYetLaunched;
-			var bottomLaunchPowerSliderValue = 0, topLaunchPowerSliderValue = 100, startingLaunchPowerSliderValue = 0;
-			var fetchSelfButton;
-			// var kickForwardButton, kickBackwardButton;
-			var gameModeButton, playerModeButton;
-			var caWorld;
-			var cannonDebugThreeJsOutliner;
-
-			init();
-			animate();
-
-			function init() {
-				scene = new THREE.Scene();
-				var rightLight = new THREE.DirectionalLight( 0x888888 );
-				rightLight.position.set( 1, 0, 0 ).normalize();
-				scene.add(rightLight);
-				var leftLight = new THREE.DirectionalLight( 0x888888 );
-				leftLight.position.set( -1, 0, 0 ).normalize();
-				scene.add(leftLight);
-				var bottomLight = new THREE.DirectionalLight( 0x888888 );
-				bottomLight.position.set( 0, -1, 0 ).normalize();
-				scene.add(bottomLight);
-				renderer = new THREE.WebGLRenderer();
-				document.body.appendChild( renderer.domElement );
-				renderer.domElement.id = "rendererDomElement";
-
-				caWorld = new CANNON.World();
-				caWorld.gravity.set( 0, -980, 0 ); // (gravity in centimeters per second pointing "down")
-				caWorld.broadphase = new CANNON.NaiveBroadphase();
-				if( debuggingModeIsOn ) {
-					cannonDebugThreeJsOutliner = new THREE.CannonDebugRenderer( scene, caWorld );
-				}
-
-				viewBackgroundColor = new THREE.Color().setRGB( 0.1, 0.8, 0.1 );
-				viewCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 1000000 );
-				homeTheViewCamera();
-				viewCamLight = new THREE.DirectionalLight( 0x888888 );
-				viewCamLight.position.copy( viewCamera.position );
-				viewCamLight.rotation.copy( viewCamera.rotation );
-				scene.add( viewCamLight );
-
-				viewWindowOrbitElement = document.createElement( "div" );
-				document.body.appendChild( viewWindowOrbitElement );
-				viewWindowOrbitElement.id = "viewOrbitElement";
-				viewWindowOrbitElement.style.cssText = "position:absolute;display:block";
-				navWindowOrbitElement = document.createElement( "div" );
-				document.body.appendChild( navWindowOrbitElement );
-				navWindowOrbitElement.id = "navOrbitElement";
-				navWindowOrbitElement.style.cssText = "position:absolute;display:block";
-				selfWindowOrbitElement = document.createElement( "div" );
-				document.body.appendChild( selfWindowOrbitElement );
-				selfWindowOrbitElement.id = "selfOrbitElement";
-				selfWindowOrbitElement.style.cssText = "position:absolute;display:block";
-
-				navBackgroundColor = new THREE.Color().setRGB( 0.1, 0.2, 0.7 );
-				navCamera = new THREE.PerspectiveCamera( 60, 1.3, 1, 1000000 );
-				homeTheNavCamera();
-				navCamLight = new THREE.DirectionalLight( 0x888888 );
-				navCamLight.position.copy( navCamera.position );
-				navCamLight.rotation.copy( navCamera.rotation );
-				scene.add( navCamLight );
-
-				selfBackgroundColor = new THREE.Color().setRGB( 0.1, 0.7, 0.9 );
-				selfCamera = new THREE.PerspectiveCamera( 15, 1.3, 1, 1000000 );
-				homeTheSelfCamera();
-				selfCamLight = new THREE.DirectionalLight( 0x888888 );
-				selfCamLight.position.copy( selfCamera.position );
-				selfCamLight.rotation.copy( selfCamera.rotation );
-				scene.add( selfCamLight );
-
-				coreWindowContainer = document.createElement( "div" );
-				coreWindowContainer.id = "core";
-				coreWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c0c;background-color:#808";
-				document.body.appendChild( coreWindowContainer );
-				optHWindowContainer = document.createElement( "div" );
-				optHWindowContainer.id = "opth";
-				optHWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#0cc;background-color:#088";
-				document.body.appendChild( optHWindowContainer );
-				optVWindowContainer = document.createElement( "div" );
-				optVWindowContainer.id = "optv";
-				optVWindowContainer.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#cc0;background-color:#880";
-				document.body.appendChild( optVWindowContainer );
-
-				topicHorizonTexture = THREE.ImageUtils.loadTexture( 'art/GrndCnynFull.jpg', render );
-				topicHorizonMesh = new THREE.Mesh(
-					new THREE.BoxGeometry( 400000, 300000, 400000 ),
-					new THREE.MeshBasicMaterial( { map: topicHorizonTexture, side:THREE.DoubleSide } ) );
-				topicHorizonMesh.position.set( 0, 0, -300 );
-				platformMesh = new THREE.Mesh(
-					new THREE.BoxGeometry( 200, 50, 200 ),
-					new THREE.MeshLambertMaterial( { color:0x00ff00 } ) );
-				platformMesh.position.set( 0, -25, 100 );
-
-				var launcherMeshTexture = THREE.ImageUtils.loadTexture( 'art/GrndCnynFull.jpg', render );
-				var launcherMeshMaterial = new THREE.MeshBasicMaterial( { map: launcherMeshTexture } );
-				launcherMesh = new THREE.Mesh(
-					new THREE.CylinderGeometry( 25, 25, 150 ),
-					new THREE.MeshLambertMaterial( { color:0xff0000 } ) );
-				launcherMeshHomePosition = new THREE.Vector3;
-				launcherMeshHomePosition.set( 0, 25, 125 );
-				launcherMesh.position.copy( launcherMeshHomePosition );
-				launcherMesh.rotation.x = Math.PI / 2;
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRightV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfLeftV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfTopV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfBottomV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfRearV0.jpg' ) }));
-				selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/SelfFrontV0.jpg' ) }));
-				// selfMaterialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( 'art/Happy.jpg' ) }));
-				var selfMeshMaterial = new THREE.MeshFaceMaterial(selfMaterialArray);
-				var selfWidth = 50, selfHeight = 100, selfDepth = 56;
-				var selfMeshGeometry = new THREE.BoxGeometry( selfWidth, selfHeight, selfDepth );
-				selfMesh = new THREE.Mesh( selfMeshGeometry, selfMeshMaterial );
-				selfMesh.position.set( 0, 50, 28 );
-				selfMeshHomePosition = new THREE.Vector3;
-				selfMeshHomePosition.copy( selfMesh.position );
-				launcherToSelfOffset = new THREE.Vector3;
-				launcherToSelfOffset.subVectors( selfMesh.position, launcherMesh.position );
-
-				var caSelfMaterial = new CANNON.Material( "caSelfMaterial" );
-				var caSelfShape = new CANNON.Box( new CANNON.Vec3( selfWidth/2, selfHeight/2, selfDepth/2 ) );
-				selfBody = new CANNON.Body( { mass: 10, material: caSelfMaterial } );
-				selfBody.addShape( caSelfShape );
-				selfBody.rotationalDamping = 0.1;
-				moveSelfBodyToMesh();
-				caWorld.add( selfBody );
-				notYetLaunched = true;
-
-				scene.add( topicHorizonMesh );
-				scene.add( platformMesh );
-				scene.add( launcherMesh );
-				scene.add( selfMesh );
-
-				viewOrbitControls = new THREE.OrbitControls( viewCamera, viewWindowOrbitElement );
-				viewOrbitControls.name = "viewOrbitControls";
-				viewOrbitControls.damping = 0.2;
-				viewOrbitControls.addEventListener( 'change', render );
-				navOrbitControls = new THREE.OrbitControls( navCamera, navWindowOrbitElement );
-				navOrbitControls.name = "navOrbitControls";
-				navOrbitControls.damping = 0.2;
-				navOrbitControls.addEventListener( 'change', render );
-				selfOrbitControls = new THREE.OrbitControls( selfCamera, selfWindowOrbitElement );
-				selfOrbitControls.name = "selfOrbitControls";
-				selfOrbitControls.damping = 0.2;
-				selfOrbitControls.addEventListener( 'change', render );
-
-				// Create the player gallery
-				playerGallery = new IdeaHuntPlayerGallery();
-
-				if( debuggingModeIsOn ) {
-					stats = new Stats();
-					stats.domElement.style.position = "absolute";
-					stats.domElement.style.top = "0px";
-					document.body.appendChild( stats.domElement );
-
-					devMsg = document.createElement( "div" );
-					devMsg.style.cssText = "position:absolute;border-style:solid;border-width:1px;border-color:#c00;background-color:#f88";
-					devMsg.style.left = stats.domElement.style.width;
-					devMsg.style.height = "20px";
-					devMsg.style.top = "0px";
-					document.body.appendChild( devMsg );
-				}
-
-				updateRenderingGeometry();
-				render();
-
-				window.addEventListener( "resize", onWindowResize, false );
-				window.addEventListener( "orientationchange", onWindowResize, false );
-
-
-				launchButton = new imageButton( "art/launchButton.png", "optv", 0.5, 0.85, 0.4, 0.1, " ", launchButtonClickHandler );
-				launchButtonLabel = new imageLabel( "art/launchButtonLabel.png", "optv", 0.05, 0.85, 0.4, 0.1 );
-
-				launchPowerSlider = new verticalSlider( "art/launchPowerSlider.png", "optv", 0.75, 0.23, 0.4, 0.15, 0.35, "#662244", bottomLaunchPowerSliderValue, topLaunchPowerSliderValue, startingLaunchPowerSliderValue, launchPowerSliderChangeHandler );
-				launchSliderLabel = new imageLabel( "art/launchPowerSliderLabel.png", "optv", 0.1, 0.16, 0.4, 0.5 );
-				launchPowerMeter = new textBox( " ", "optv", 0.25, 0.73, 0.5, 0.05, "blue", "2.5", "white", 2, "black" );
-
-				fetchSelfButton = new imageButton( "art/resetButton.png", "optv", 0.05, 0.02, 0.4, 0.4, "W", fetchSelfButtonClickHandler );
-
-				gameModeButton = new imageButton( "art/gameModeButton.png", "core", 0.55, 0.1, 0.35, 0.25, "Hx", gameModeButtonClickHandler );
-				playerModeButton = new imageButton( "art/playerModeButton.png", "core", 0.1, 0.1, 0.35, 0.25, "Hx", playerModeButtonClickHandler );
-
-				leftArrowButton = new imageButton( "art/leftArrowPerspective.png", "opth", 0.05, 0.35, 0.15, 0.3, "H", leftArrowButtonClickHandler );
-				rightArrowButton = new imageButton( "art/rightArrowPerspective.png", "opth", 0.35, 0.35, 0.15, 0.3, "H", rightArrowButtonClickHandler );
-				fartherArrowButton = new imageButton( "art/fartherArrowPerspective.png", "opth", 0.2, 0.1, 0.2, 0.3, "H", fartherArrowButtonClickHandler );
-				closerArrowButton = new imageButton( "art/closerArrowPerspective.png", "opth", 0.2, 0.7, 0.2, 0.3, "H", closerArrowButtonClickHandler );
-				upArrowButton = new imageButton( "art/upArrow.png", "opth", 0.7, 0.05, 0.15, 0.25, "H", upArrowButtonClickHandler );
-				downArrowButton = new imageButton( "art/downArrow.png", "opth", 0.7, 0.7, 0.15, 0.25, "H", downArrowButtonClickHandler );
-
-				playerModeButtonClickHandler();
-			}
-
-			function updateSelfFace() {
-				if( playerGallery.aPlayerMugShotIsCurrentlySelected ) {
-					selfMaterialArray[ 5 ].map = THREE.ImageUtils.loadTexture( "art/" + playerGallery.currentlySelectedPlayerName + ".jpg" );
-					selfMaterialArray[ 5 ].needsUpdate = true;
-				}
-			}
-			function playerModeButtonClickHandler() {
-				gameMode = gameModes.playerAffairs;
-				launchButton.deactivate();
-				launchButtonLabel.deactivate();
-				launchPowerSlider.deactivate();
-				launchSliderLabel.deactivate();
-				launchPowerMeter.deactivate();
-				fetchSelfButton.deactivate();
-				playerGallery.sizeThePlayerGallery();
-				playerGallery.showThePlayerGallery();
-			}
-			function gameModeButtonClickHandler() {
-				gameMode = gameModes.playingTheGame;
-				launchButton.activate();
-				launchButtonLabel.activate();
-				launchPowerSlider.activate();
-				launchSliderLabel.activate();
-				launchPowerMeter.activate();
-				fetchSelfButton.activate();
-				updateSelfFace();
-				playerGallery.hideThePlayerGallery();
-			}
-			function homeTheViewCamera() {
-				viewCamera.position.set( 250, 100, 700 );
-				viewCamera.rotation.x = -Math.PI/10;
-				viewCamera.rotation.y = Math.PI/4;
-			}
-			function homeTheNavCamera() {
-				navCamera.position.set( 0, 1200, 0 );
-				navCamera.rotation.x = -Math.PI/2;
-			}
-			function homeTheSelfCamera() {
-				selfCamera.position.set( 0, 0, -1000 );
-				selfCamera.rotation.set( 0, Math.PI, 0 );
-			}
-			function turnTheSelfCameraToLaunchPosition() {
-				selfCamera.rotation.set( 0, 0, 0 );
-			}
-			function trackTheSelfCameraToSelfMeshPosition() {
-				selfCamera.position.copy( selfMesh.position );
-				selfCamera.position.z -= 100;
-			}
-			function launchButtonClickHandler( e ) {
-				selfBody.velocity.z = -100 * launchPowerSlider.currentValue;
-				launcherMesh.position.copy( launcherMeshHomePosition );
-				launchPowerSlider.setSlider( launchPowerSlider.homeValue );
-				turnTheSelfCameraToLaunchPosition();
-				trackTheSelfCameraToSelfMeshPosition();
-				notYetLaunched = false;
-			}
-			function launchPowerSliderChangeHandler( e ) {
-				var launchPower = launchPowerSlider.currentValue;
-				launchPowerMeter.updateText( launchPower.toFixed( 0 ) + "%" );
-				launcherMesh.position.z = 125 + ( 2 * launchPower );
-				selfMesh.position.addVectors( launcherMesh.position, launcherToSelfOffset );
-			}
-			function fetchSelfButtonClickHandler( e ) {
-				notYetLaunched = true;
-				selfBody.velocity.set( 0, 0, 0 );
-				selfMesh.position.copy( selfMeshHomePosition );
-				selfBody.position.copy( selfMeshHomePosition );
-				homeTheViewCamera();
-				homeTheNavCamera();
-				homeTheSelfCamera();
-			}
-			function leftArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity - 1000, currentYvelocity, currentZvelocity );
-			}
-			function rightArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity + 1000, currentYvelocity, currentZvelocity );
-			}
-			function fartherArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity, currentYvelocity, currentZvelocity - 1000 );
-			}
-			function closerArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity, currentYvelocity, currentZvelocity + 1000 );
-			}
-			function upArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity, currentYvelocity + 1000, currentZvelocity );
-			}
-			function downArrowButtonClickHandler( e ) {
-				var currentXvelocity = selfBody.velocity.x;
-				var currentYvelocity = selfBody.velocity.y;
-				var currentZvelocity = selfBody.velocity.z;
-				selfBody.velocity.set( currentXvelocity, currentYvelocity - 1000, currentZvelocity );
-			}
-
-			function moveSelfBodyToMesh() {
-				selfBody.position.copy( selfMesh.position );
-				selfBody.quaternion.copy( selfMesh.quaternion );
-			}
-			function moveSelfMeshToBody() {
-				selfMesh.position.copy( selfBody.position );
-				selfMesh.quaternion.copy( selfBody.quaternion );
-			}
-			function updateRenderingGeometry() {
-				var windowLeftSegmentPercent;
-				var windowRightSegmentPercent;
-				var windowMidRightSegmentPercent;
-				var windowTopSegmentPercent;
-				var windowBottomSegmentPercent;
-				var windowNavHeightPercent;
-				var windowSelfHeightPercent;
-				var Aspect;
-				windowWidth = window.innerWidth;
-				windowHeight = window.innerHeight;
-				Aspect = windowWidth / windowHeight;
-				if( Aspect > 2 ) {
-					// >1.5 => very wide window
-					windowLeftSegmentPercent = 20;
-					windowRightSegmentPercent = 10;
-					windowMidRightSegmentPercent = 15;
-					windowNavHeightPercent = 50;
-					navWindowHeight = ( ( windowHeight * windowNavHeightPercent ) / 100 ) | 0;
-					navWindowWidth = ( ( windowWidth * windowLeftSegmentPercent ) / 100 ) | 0;
-					navWindowLeft = 0;
-					navWindowTop = 0;
-					selfWindowHeight = windowHeight - navWindowHeight;
-					selfWindowWidth = navWindowWidth;
-					selfWindowLeft = 0;
-					selfWindowTop = navWindowHeight;
-					optVWindowWidth = ( ( windowWidth * windowRightSegmentPercent ) / 100 ) | 0;
-					optVWindowHeight = windowHeight;
-					optVWindowLeft = windowWidth - optVWindowWidth;
-					optVWindowTop = 0;
-					optHWindowHeight = navWindowHeight;
-					optHWindowWidth = ( ( windowWidth * windowMidRightSegmentPercent ) / 100 ) | 0;
-					optHWindowLeft = windowWidth - optVWindowWidth - optHWindowWidth;
-					optHWindowTop = 0;
-					coreWindowHeight = selfWindowHeight;
-					coreWindowWidth = optHWindowWidth;
-					coreWindowTop = selfWindowTop;
-					coreWindowLeft = optHWindowLeft;
-					viewWindowLeft = navWindowWidth;
-					viewWindowTop = 0;
-					viewWindowWidth = windowWidth - navWindowWidth - optVWindowWidth - optHWindowWidth;
-					viewWindowHeight = windowHeight;
-				} else if ( Aspect > 0.9 ) {
-					// 0.9..2 => "normal" window ranging from squarish to typically width dominant
-					windowLeftSegmentPercent = 20;
-					windowRightSegmentPercent = 10;
-					windowNavHeightPercent = 40;
-					windowSelfHeightPercent = 40;
-					navWindowHeight = ( ( windowHeight * windowNavHeightPercent ) / 100 ) | 0;
-					navWindowWidth = ( ( windowWidth * windowLeftSegmentPercent ) / 100 ) | 0;
-					navWindowLeft = 0;
-					navWindowTop = 0;
-					selfWindowHeight = ( ( windowHeight * windowSelfHeightPercent ) / 100 ) | 0;
-					selfWindowWidth = navWindowWidth;
-					selfWindowLeft = 0;
-					selfWindowTop = navWindowHeight;
-					coreWindowHeight = windowHeight - navWindowHeight - selfWindowHeight;
-					coreWindowWidth = navWindowWidth;
-					coreWindowLeft = 0;
-					coreWindowTop = navWindowHeight + selfWindowHeight;
-					optVWindowWidth = ( ( windowWidth * windowRightSegmentPercent ) / 100 ) | 0;
-					optVWindowHeight = windowHeight;
-					optVWindowLeft = windowWidth - optVWindowWidth;
-					optVWindowTop = 0;
-					optHWindowHeight = coreWindowHeight;
-					optHWindowWidth = windowWidth - navWindowWidth - optVWindowWidth;
-					optHWindowLeft = coreWindowWidth;
-					optHWindowTop = coreWindowTop;
-					viewWindowLeft = navWindowWidth;
-					viewWindowTop = 0;
-					viewWindowWidth = windowWidth - navWindowWidth - optVWindowWidth;
-					viewWindowHeight = windowHeight - optHWindowHeight;
-				} else {
-					// < 0.9 => essentially vertical window
-					windowLeftSegmentPercent = 30;
-					windowRightSegmentPercent = 15;
-					windowTopSegmentPercent = 55;
-					windowBottomSegmentPercent = 15;
-					viewWindowLeft = 0;
-					viewWindowTop = 0;
-					viewWindowWidth = windowWidth;
-					viewWindowHeight = ( ( windowHeight * windowTopSegmentPercent ) / 100 ) | 0;
-					optVWindowWidth = ( ( windowWidth * windowRightSegmentPercent ) / 100 ) | 0;
-					optVWindowHeight = windowHeight - viewWindowHeight;
-					optVWindowLeft = windowWidth - optVWindowWidth;
-					optVWindowTop = viewWindowHeight;
-					coreWindowHeight = ( ( windowHeight * windowBottomSegmentPercent ) / 100 ) | 0;
-					coreWindowWidth = ( ( windowWidth * windowLeftSegmentPercent ) / 100 ) | 0;
-					coreWindowTop = windowHeight - coreWindowHeight;
-					coreWindowLeft = 0;
-					optHWindowHeight = coreWindowHeight;
-					optHWindowWidth = windowWidth - optVWindowWidth - coreWindowWidth;
-					optHWindowLeft = coreWindowWidth;
-					optHWindowTop = coreWindowTop;
-					navWindowHeight = windowHeight - viewWindowHeight - coreWindowHeight;
-					navWindowWidth = ( ( windowWidth -  optVWindowWidth ) / 2 ) | 0;
-					navWindowLeft = 0;
-					navWindowTop = viewWindowHeight;
-					selfWindowHeight = navWindowHeight;
-					selfWindowWidth = windowWidth - optVWindowWidth - navWindowWidth;
-					selfWindowLeft = navWindowWidth;
-					selfWindowTop = navWindowTop;
-				}
-				viewWindowBottom = viewWindowTop + viewWindowHeight;
-				viewWindowRight = viewWindowLeft + viewWindowWidth;
-				navWindowBottom = navWindowTop + navWindowHeight;
-				navWindowRight = navWindowLeft + navWindowWidth;
-				selfWindowBottom = selfWindowTop + selfWindowHeight;
-				selfWindowRight = selfWindowLeft + selfWindowWidth;
-				coreWindowBottom = coreWindowTop + coreWindowHeight;
-				coreWindowRight = coreWindowLeft + coreWindowWidth;
-				optHWindowBottom = optHWindowTop + optHWindowHeight;
-				optHWindowRight = optHWindowLeft + optHWindowWidth;
-				optVWindowBottom = optVWindowTop + optVWindowHeight;
-				optVWindowRight = optVWindowLeft + optVWindowWidth;
-				coreWindowContainer.style.left = "0"+coreWindowLeft+"px";
-				coreWindowContainer.style.top = "0"+coreWindowTop+"px";
-				coreWindowContainer.style.width = "0"+coreWindowWidth+"px";
-				coreWindowContainer.style.height = "0"+coreWindowHeight+"px";
-				optHWindowContainer.style.left = "0"+optHWindowLeft+"px";
-				optHWindowContainer.style.top = "0"+optHWindowTop+"px";
-				optHWindowContainer.style.width = "0"+optHWindowWidth+"px";
-				optHWindowContainer.style.height = "0"+optHWindowHeight+"px";
-				optVWindowContainer.style.left = "0"+optVWindowLeft+"px";
-				optVWindowContainer.style.top = "0"+optVWindowTop+"px";
-				optVWindowContainer.style.width = "0"+optVWindowWidth+"px";
-				optVWindowContainer.style.height = "0"+optVWindowHeight+"px";
-				viewWindowOrbitElement .style.left = "0"+viewWindowLeft+"px";
-				viewWindowOrbitElement.style.top = "0"+viewWindowTop+"px";
-				viewWindowOrbitElement.style.width = "0"+viewWindowWidth+"px";
-				viewWindowOrbitElement.style.height = "0"+viewWindowHeight+"px";
-				navWindowOrbitElement .style.left = "0"+navWindowLeft+"px";
-				navWindowOrbitElement.style.top = "0"+navWindowTop+"px";
-				navWindowOrbitElement.style.width = "0"+navWindowWidth+"px";
-				navWindowOrbitElement.style.height = "0"+navWindowHeight+"px";
-				selfWindowOrbitElement .style.left = "0"+selfWindowLeft+"px";
-				selfWindowOrbitElement.style.top = "0"+selfWindowTop+"px";
-				selfWindowOrbitElement.style.width = "0"+selfWindowWidth+"px";
-				selfWindowOrbitElement.style.height = "0"+selfWindowHeight+"px";
-			}
-			function onWindowResize() {
-				updateRenderingGeometry();
-				render();
-			}
-			function processPhysics() {
-				if( notYetLaunched ) return;
-				var timeStep = 1 / 60;
-				caWorld.step( timeStep );
-				moveSelfMeshToBody();
-				if( !notYetLaunched ) {
-					trackTheSelfCameraToSelfMeshPosition();
-				}
-			}
-			function animate() {
-				if( debuggingModeIsOn ) {
-					devMsg.innerHTML = "self position X/Y/Z: " + selfMesh.position.x.toFixed( 0 ) + "/" + selfMesh.position.y.toFixed( 0 ) + "/" + selfMesh.position.z.toFixed( 0 ) + ", dropping at: " + selfBody.velocity.y.toFixed( 1 );
-					stats.update();
-				}
-				viewOrbitControls.update();
-				navOrbitControls.update();
-				selfOrbitControls.update();
-				processPhysics();
-				if( debuggingModeIsOn ) {
-					cannonDebugThreeJsOutliner.update();
-				}
-				if( !notYetLaunched ) {
-					navCamera.position.copy( selfMesh.position );
-					navCamera.position.y += 1200;
-				}
-				playerGallery.updateGallery();
-				render();
-				requestAnimationFrame( animate );
-			}
-			function render() {
-				if( gameModes.playingTheGame != gameMode ) return;
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-				renderer.setViewport( viewWindowLeft, windowHeight - viewWindowBottom, viewWindowWidth, viewWindowHeight );
-				renderer.setScissor( viewWindowLeft, windowHeight - viewWindowBottom, viewWindowWidth, viewWindowHeight );
-				renderer.enableScissorTest( true );
-				renderer.setClearColor( viewBackgroundColor );
-				viewCamera.aspect = viewWindowWidth/viewWindowHeight;
-				viewCamera.lookAt( topicHorizonMesh.position );
-				viewCamera.updateProjectionMatrix();
-				renderer.render( scene, viewCamera );
-
-				renderer.setViewport( navWindowLeft, windowHeight - navWindowBottom, navWindowWidth, navWindowHeight );
-				renderer.setScissor( navWindowLeft, windowHeight - navWindowBottom, navWindowWidth, navWindowHeight );
-				renderer.enableScissorTest( true );
-				renderer.setClearColor( navBackgroundColor );
-				navCamera.aspect = navWindowWidth/navWindowHeight;
-				navCamera.updateProjectionMatrix();
-				renderer.render( scene, navCamera );
-
-				renderer.setViewport( selfWindowLeft, windowHeight - selfWindowBottom, selfWindowWidth, selfWindowHeight );
-				renderer.setScissor( selfWindowLeft, windowHeight - selfWindowBottom, selfWindowWidth, selfWindowHeight );
-				renderer.enableScissorTest( true );
-				renderer.setClearColor( selfBackgroundColor );
-				selfCamera.aspect = selfWindowWidth/selfWindowHeight;
-				selfCamera
-				renderer.render( scene, selfCamera );
-			}
-		</script>
-	</body>
+<head>
+	<title>Idea Hunt 0.8</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style type="text/css">
+		body {
+			margin: 0px;
+			background-color: #fff;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript" src="three.min.js"></script>
+	<script type="text/javascript" src="stats.min.js"></script>
+	<script type="text/javascript" src="OrbitControls.js"></script>
+	<script type="text/javascript" src="cannon.min.js"></script>
+	<script type="text/javascript" src="CannonDebugRenderer.js"></script>
+	<script type="text/javascript">
+		// global variables
+		// - - Development
+		var debuggingModeIsOn = true;
+		var devMsg;
+		var pitchX = 0.0, pitchY = 0.0, pitchZ = 0.0;
+		// - - Cameras, scenes, lights, renderer
+		var scene, renderer, camera, light;
+		var cameraLaunchPosition = new THREE.Vector3();
+		var cameraLaunchOrientation = new THREE.Quaternion();
+		// - - Physics
+		var caWorld;
+		var cannonDebugThreeJsOutliner;
+		// - - Players
+		// var selfGeometry, selfMaterial, selfMesh, selfBody, selfMeshHomePosition;
+		var selfMeshPosition, selfMeshOrientation;
+		var selfHeadMesh, selfHairMesh, selfHatMesh, selfShirtMesh;
+		var selfHeadGeometry, selfHairGeometry, selfHatGeometry, selfShirtGeometry;
+		var selfHeadMaterial, selfHairMaterial, selfHatMaterial, selfShirtMaterial;
+		var selfHeadOffset, selfHairOffset, selfHatOffset, selfShirtOffset;
+		var selfBody, selfMeshHomePosition;
+		var selfMaterialArray = [];
+		var playerGallery;
+		var playerToEditIndex, newPlayerBeingCreated;
+		// - - Global screen geometry
+		var windowWidth, windowHeight;
+		// - - Opening screen
+		var initialLoadingSemaphore;
+		// - - ChoosePlayer screen
+		var choosePlayerScreenDiv;
+		var choosePlayerCreateNewButton, choosePlayerMakeChangesButton, choosePlayerPlayWithButton;
+		// - - EditPlayer screen
+		var editPlayerScreenDiv;
+		var editPlayerCancelButton, editPlayerSaveButton;
+		// - - BrowseTopics screen
+		// - - Launch screen
+		var viewWindowWidth, viewWindowHeight, viewWindowLeft, viewWindowTop, viewWindowBottom, viewWindowRight;
+		var navWindowWidth, navWindowHeight, navWindowLeft, navWindowTop, navWindowBottom, navWindowRight;
+		var selfWindowWidth, selfWindowHeight, selfWindowLeft, selfWindowTop, selfWindowBottom, selfWindowRight;
+		// var viewWindowOrbitElement, navWindowOrbitElement, selfWindowOrbitElement;
+		var orbitElement;
+		var coreWindowContainer, coreWindowWidth, coreWindowHeight, coreWindowLeft, coreWindowTop, coreWindowBottom, coreWindowRight;
+		var optHWindowContainer, optHWindowWidth, optHWindowHeight, optHWindowLeft, optHWindowTop, optHWindowBottom, optHWindowRight;
+		var optVWindowContainer, optVWindowWidth, optVWindowHeight, optVWindowLeft, optVWindowTop, optVWindowBottom, optVWindowRight;
+		var topicHorizonGeometry, topicHorizontMaterial, topicHorizonMesh, topicHorizonTexture;
+		var topicHorizonMaterialArray = [];
+		var launchPlatformMesh;
+		var launcherMesh, launcherMeshHomePosition, launcherToSelfOffset;
+		var flyerMesh, flyerBody, flyerMeshHomePosition;
+		// var viewOrbitControls, navOrbitControls, selfOrbitControls;
+		var orbitControls;
+		var launchButton, launchButtonLabel;
+		var bottomLaunchPowerSliderValue = 0, topLaunchPowerSliderValue = 30, startingLaunchPowerSliderValue = 0;
+		var selfBodyLaunchSpeed;
+		var selfBodyLaunchVelocity = new THREE.Vector3;
+		var launchCameraFocusPoint, launchStartCameraSelfConvergenceAnimationCounter, launchStartCameraSelfConvergenceAnimationCount = 500;
+		// - - Roaming screen
+		var roamingBackButton, roamingPauseButton, roamingFasterButton, roamingSlowerButton, roamingLeftButton;
+		var roamingRightButton, roamingShootButton, roamingGraspButton, roamingUpButton, roamingDownButton;
+		var roamingMaxPitchChange = 0.003, roamingMaxYawChange = 0.003, roamingSpeedMultplier = 10.0;
+		var roamingCurrentSpeedScalar, roamingVelocityVector = new THREE.Vector3( 0, 0, -1 );
+		var roamingRaycaster;
+		// - - Screen navigation
+		var currentGameScreen, gameScreens = {
+			initialLoadingScreen: "initialLoadingScreen",
+			openingScreen: "openingScreen",
+			choosePlayer: "choosePlayer",
+			editPlayer: "editPlayer",
+			savePlayerError: "savePlayerError",
+			browseTopics: "browseTopics",
+			launch: "launch",
+			roaming: "roaming",
+			ideaContact: "ideaContact",
+			ideaInterior: "ideaInterior",
+			myScore: "myScore",
+			allScores: "allScores"
+		};
+	</script>
+	<script type="text/javascript" src="cameras.js"></script>
+	<script type="text/javascript" src="context.js"></script>
+	<script type="text/javascript" src="controls.js"></script>
+	<script type="text/javascript" src="motion.js"></script>
+	<script type="text/javascript" src="players.js"></script>
+	<script type="text/javascript" src="eventHandlers.js"></script>
+	<script type="text/javascript">
+		init();
+		animate();
+		function init() {
+			initialLoadingSemaphore = 0;
+			currentGameScreen = gameScreens.initialLoadingScreen;
+			createWorld();
+			initCamera();
+			initEventHandlers();
+			updateRenderingGeometry();
+			render();
+			// initEventHandlers();
+		}
+	</script>
+</body>
 </html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Roaming Screen</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style type="text/css">
+		body {
+			margin: 0px;
+			background-color: #fff;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript" src="three.min.js"></script>
+	<script type="text/javascript" src="stats.min.js"></script>
+	<script type="text/javascript" src="OrbitControls.js"></script>
+	<script type="text/javascript" src="cannon.min.js"></script>
+	<script type="text/javascript" src="CannonDebugRenderer.js"></script>
+	<script type="text/javascript" src="controls.js"></script>
+	<script type="text/javascript">
+		var scene, renderer;
+		var viewCamera, viewCamLight, viewBackgroundColor;
+		var windowWidth, windowHeight;
+		var topicBackdropTexture, topicBackdropMesh;
+		init();
+		animate();
+		function init() {
+			scene = new THREE.Scene();
+			var rightLight = new THREE.DirectionalLight( 0x888888 );
+			rightLight.position.set( 1, 0, 0 ).normalize();
+			scene.add(rightLight);
+			var leftLight = new THREE.DirectionalLight( 0x888888 );
+			leftLight.position.set( -1, 0, 0 ).normalize();
+			scene.add(leftLight);
+			var bottomLight = new THREE.DirectionalLight( 0x888888 );
+			bottomLight.position.set( 0, -1, 0 ).normalize();
+			scene.add(bottomLight);
+			renderer = new THREE.WebGLRenderer();
+			document.body.appendChild( renderer.domElement );
+			renderer.domElement.id = "rendererDomElement";
+
+			viewBackgroundColor = new THREE.Color().setRGB( 0.1, 0.8, 0.1 );
+			viewCamera = new THREE.PerspectiveCamera( 50, 1.3, 1, 1000000 );
+			viewCamera.position.set( 250, 100, 700 );
+			viewCamera.rotation.x = -Math.PI/10;
+			viewCamera.rotation.y = Math.PI/4;
+			viewCamLight = new THREE.DirectionalLight( 0x888888 );
+			viewCamLight.position.copy( viewCamera.position );
+			viewCamLight.rotation.copy( viewCamera.rotation );
+			scene.add( viewCamLight );
+
+			viewWindowOrbitElement = document.createElement( "div" );
+			document.body.appendChild( viewWindowOrbitElement );
+			viewWindowOrbitElement.id = "viewOrbitElement";
+			viewWindowOrbitElement.style.cssText = "position:absolute;display:block";
+
+			topicBackdropTexture = THREE.ImageUtils.loadTexture( 'art/GrndCnyn4to3.jpg' );
+			topicBackdropMesh = new THREE.Mesh(
+				new THREE.BoxGeometry( 400000, 300000, 400000 ),
+				new THREE.MeshBasicMaterial( { map: topicBackdropTexture, side:THREE.DoubleSide } ) );
+			topicBackdropMesh.position.set( 0, 0, -300 );
+			scene.add( topicBackdropMesh );
+
+			viewOrbitControls = new THREE.OrbitControls( viewCamera );
+			viewOrbitControls.name = "viewOrbitControls";
+			viewOrbitControls.damping = 0.2;
+			viewOrbitControls.addEventListener( 'change', render );
+
+			var roamingBackButton = new imageButton( "art/returnArrow-Teal.png", "rendererDomElement", 0.01, 0.01, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingPauseButton = new imageButton( "art/pauseBars-Teal.png", "rendererDomElement", 0.02, 0.2, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingFasterButton = new imageButton( "art/faster-OrangeRed.png", "rendererDomElement", 0.01, 0.41, 0.1, 0.15, " ", phonyEventHandler );
+			var roamingSlowerButton = new imageButton( "art/slower-YellowGreen.png", "rendererDomElement", 0.01, 0.61, 0.1, 0.15, " ", phonyEventHandler );
+			var roamingLeftButton = new imageButton( "art/leftArrow-Yellow.png", "rendererDomElement", 0.01, 0.81, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingRightButton = new imageButton( "art/rightArrow-Yellow.png", "rendererDomElement", 0.2, 0.81, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingShootButton = new imageButton( "art/crossHair-Red.png", "rendererDomElement", 0.9, 0.01, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingGraspButton = new imageButton( "art/graspingHand3.png", "rendererDomElement", 0.92, 0.21, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingUpButton = new imageButton( "art/upArrow-Yellow.png", "rendererDomElement", 0.89, 0.61, 0.15, 0.15, "H", phonyEventHandler );
+			var roamingDownButton = new imageButton( "art/downArrow-Yellow.png", "rendererDomElement", 0.89, 0.81, 0.15, 0.15, "H", phonyEventHandler );
+		}
+		function phonyEventHandler( e ) {
+			e.preventDefault();
+		}
+		function animate() {
+			viewOrbitControls.update();
+			render();
+			requestAnimationFrame( animate );
+		}
+		function render() {
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( viewBackgroundColor );
+			viewCamera.aspect = window.innerWidth/window.innerHeight;
+			viewCamera.lookAt( topicBackdropMesh.position );
+			viewCamera.updateProjectionMatrix();
+			renderer.render( scene, viewCamera );
+		}
+	</script>
+</body>
+</html>

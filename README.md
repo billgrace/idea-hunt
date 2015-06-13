@@ -98,3 +98,10 @@ Need to add a way to find yourself when you lose sight of the little green dot.
 Let's call this V0.7 -
 
 
+Seems to have taken forever but I think the while-flying navigation is now working right: left-right yaw controls,
+up-down pitch controls, slow/fast-backward/frontward speed controls, ignoring roll.
+I can fly around inside and outside the box with pretty pictures on the walls and essentially nothing inside.
+
+To make the initial self/player a bit better, the six-sided box self is replaced with simple shapes generated in blender to be a head, hair, hat and shirt/body with assignable colors.
+I'm calling this V0.8 and moving on to update the player selection and editing.
+

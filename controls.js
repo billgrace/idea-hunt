@@ -19,7 +19,7 @@ function textBox( startingText, hostElementId, leftPercent, topPercent, widthPer
 					textcolor, textsize, backgroundcolor, borderwidth, bordercolor ) {
 	var inst = this;
 	// make a variable to allow the text box to become dormant
-	this.dormant = false;
+	this.dormant = true;
 	// preserve the arguments
 	this.startingText = startingText;
 	this.hostId = hostElementId;
@@ -80,8 +80,13 @@ function textBox( startingText, hostElementId, leftPercent, topPercent, widthPer
 		inst.dormant = true;
 		inst.visible.style.display = "none";
 	}
-	this.windowResizeHandler();
-	window.addEventListener( "resize", this.windowResizeHandler );
+
+	// at time of instantiation/creation, be dormant until activation is invoked
+	this.deactivate();
+
+	// add event listeners to invoke the resize handler
+	window.addEventListener( "resize", this.windowResizeHandler, false );
+	window.addEventListener( "orientationchange", this.windowResizeHandler, false );
 };
 
 // imageLabel places an image file into a named HTML element.
@@ -91,7 +96,7 @@ function imageLabel ( imageFileName, hostElementId, leftPercent, topPercent, wid
 	// make a persistent variable of this instance for later reference during event handling
 	var inst = this;
 	// make a variable allowing the label to become dormant
-	this.dormant = false;
+	this.dormant = true;
 	// preserve the arguments
 	this.imageFileName = imageFileName;
 	this.hostId = hostElementId;
@@ -141,10 +146,12 @@ function imageLabel ( imageFileName, hostElementId, leftPercent, topPercent, wid
 		inst.visible.style.display = "none";
 	}
 
-	// an initial invocation of the resizing routine to work out the starting geometry of the label
-	this.windowResizeHandler();
-	// add an event listener to invoke the resize handler
-	window.addEventListener( "resize", this.windowResizeHandler );
+	// at time of instantiation/creation, be dormant until activation is invoked
+	this.deactivate();
+
+	// add event listeners to invoke the resize handler
+	window.addEventListener( "resize", this.windowResizeHandler, false );
+	window.addEventListener( "orientationchange", this.windowResizeHandler, false );
 };
 
 // horizontalSlider creates a left-right slide control within a named HTML element.
@@ -157,7 +164,7 @@ function horizontalSlider( sliderImageFileName, hostElementId, leftLimitPercent,
 	// make a persistent variable of this instance for later reference during event handling
 	var inst = this;
 	// make a variable allowing the label to become dormant
-	this.dormant = false;
+	this.dormant = true;
 	// preserve the arguments
 	this.sliderImageFileName = sliderImageFileName;
 	this.trackColor = trackColor;
@@ -299,11 +306,12 @@ function horizontalSlider( sliderImageFileName, hostElementId, leftLimitPercent,
 		inst.nowTracking = false;
 	}
 
-	// an initial invocation of the resizing routine to work out the starting geometry of the control
-	this.windowResizeHandler();
+	// at time of instantiation/creation, be dormant until activation is invoked
+	this.deactivate();
 
-	// add an event listener to invoke the resize handler
+	// add event listeners to invoke the resize handler
 	window.addEventListener( "resize", this.windowResizeHandler, false );
+	window.addEventListener( "orientationchange", this.windowResizeHandler, false );
 	// add event listeners to invoke the mouse/touch handlers
 	this.track.addEventListener( "mousedown", this.sliderMouseDownEventHandler, false );
 	this.slider.addEventListener( "mousedown", this.sliderMouseDownEventHandler, false );
@@ -322,7 +330,7 @@ function verticalSlider( sliderImageFileName, hostElementId, horizontalCenterPer
 	// make a persistent variable of this instance for later reference during event handling
 	var inst = this;
 	// make a variable allowing the label to become dormant
-	this.dormant = false;
+	this.dormant = true;
 	// preserve the arguments
 	this.sliderImageFileName = sliderImageFileName;
 	this.trackColor = trackColor;
@@ -472,11 +480,12 @@ function verticalSlider( sliderImageFileName, hostElementId, horizontalCenterPer
 		inst.nowTracking = false;
 	}
 
-	// an initial invocation of the resizing routine to work out the starting geometry of the control
-	this.windowResizeHandler();
+	// at time of instantiation/creation, be dormant until activation is invoked
+	this.deactivate();
 
-	// add an event listener to invoke the resize handler
+	// add event listeners to invoke the resize handler
 	window.addEventListener( "resize", this.windowResizeHandler, false );
+	window.addEventListener( "orientationchange", this.windowResizeHandler, false );
 	// add event listeners to invoke the mouse/touch handlers
 	this.track.addEventListener( "mousedown", this.sliderMouseDownEventHandler, false );
 	this.slider.addEventListener( "mousedown", this.sliderMouseDownEventHandler, false );
@@ -497,11 +506,13 @@ function verticalSlider( sliderImageFileName, hostElementId, horizontalCenterPer
 //   - the width of the host element ("W")
 //   - the height of the host element ("H")
 //   - neither of the above and simply stretch along with any resizing
-function imageButton( imageFileName, hostElementId, leftPercent, topPercent, widthPercent, heightPercent, preserveAspect, clickHandler ) {
+// Internal variable "buttonDown" can be polled to see if the button is presently being held down
+// Internal variables "touchPointX" and "touchPointY" can be polled to see where the touch is currently hitting the button ( 0.0 = left/top, 100.0 = right/bottom)
+function imageButton( imageFileName, hostElementId, leftPercent, topPercent, widthPercent, heightPercent, preserveAspect, allowSlidingOn, clickHandler ) {
 	// make a persistent variable of this instance for later reference during event handling
 	var inst = this;
 	// make a variable allowing the label to become dormant
-	this.dormant = false;
+	this.dormant = true;
 	// preserve the arguments
 	this.imageFileName = imageFileName;
 	this.hostId = hostElementId;
@@ -509,6 +520,10 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 	this.topPercent = topPercent;
 	this.widthPercent = widthPercent;
 	this.heightPercent = heightPercent;
+	this.leftPixel = 0;
+	this.topPixel = 0;
+	this.widthPixel = 0;
+	this.heightPixel = 0;
 	this.preserveAspect = preserveAspect;
 	this.visible = document.createElement( "div" );
 	this.visible.style.cssText = "position:absolute";
@@ -518,6 +533,8 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 	this.imageElement.src = imageFileName;
 	this.visible.appendChild( this.imageElement );
 	this.buttonDown = false;
+	this.touchPointX = 0;
+	this.touchPointY = 0;
 	this.resize = function( windowElementId, left, top, width, height ) {
 		// find the button's host element
 		var hostElement = document.getElementById( windowElementId ); 
@@ -529,8 +546,10 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 		// calculate the button image's natural aspect ratio
 		var imageAspectRatio = inst.imageElement.naturalWidth / inst.imageElement.naturalHeight;
 		// set the button's location geometry (both container div and image) to the specified proportions
-		inst.imageElement.style.left = inst.visible.style.left = "0" + ( ( hostLeft + ( left * hostWidth ) ) | 0 ) + "px";
-		inst.imageElement.style.top = inst.visible.style.top = "0" + ( ( hostTop + ( top * hostHeight ) ) | 0 ) + "px";
+		inst.leftPixel = ( ( hostLeft + ( left * hostWidth ) ) | 0 );
+		inst.topPixel = ( ( hostTop + ( top * hostHeight ) ) | 0 );
+		inst.imageElement.style.left = inst.visible.style.left = "0" + inst.leftPixel + "px";
+		inst.imageElement.style.top = inst.visible.style.top = "0" + inst.topPixel + "px";
 		// calculate the button's size geometry according to the specified proportions
 		var rulingWidth = width * hostWidth;
 		var rulingHeight = height * hostHeight;
@@ -538,20 +557,22 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 		switch( inst.preserveAspect ) {
 			case "W":
 				// set the button's size according to the width of the host element and maintain the image's original aspect ratio
-				inst.imageElement.style.width = inst.visible.style.width = "0" + ( ( rulingWidth ) | 0 ) + "px";
-				inst.imageElement.style.height = inst.visible.style.height = "0" + ( ( rulingWidth / imageAspectRatio ) | 0 ) + "px";
+				inst.widthPixel = ( ( rulingWidth ) | 0 );
+				inst.heightPixel = ( ( rulingWidth / imageAspectRatio ) | 0 );
 				break;
 			case "H":
 				// set the button's size according to the height of the host element and maintain the image's original aspect ratio
-				inst.imageElement.style.width = inst.visible.style.width = "0" + ( ( rulingHeight * imageAspectRatio ) | 0 ) + "px";
-				inst.imageElement.style.height = inst.visible.style.height = "0" + ( ( rulingHeight ) | 0 ) + "px";
+				inst.widthPixel = ( ( rulingHeight * imageAspectRatio ) | 0 );
+				inst.heightPixel = ( ( rulingHeight ) | 0 );
 				break;
 			default:
 				// set the button's size according to the geometry of the host element and ignore the original image's aspect ratio
-				inst.imageElement.style.width = inst.visible.style.width = "0" + ( ( rulingWidth ) | 0 ) + "px";
-				inst.imageElement.style.height = inst.visible.style.height = "0" + ( ( rulingHeight ) | 0 ) + "px";
+				inst.widthPixel = ( ( rulingWidth ) | 0 );
+				inst.heightPixel = ( ( rulingHeight ) | 0 );
 				break;
 		}
+		inst.imageElement.style.width = inst.visible.style.width = "0" + inst.widthPixel + "px";
+		inst.imageElement.style.height = inst.visible.style.height = "0" + inst.heightPixel + "px";
 	}
 	// an event handler to call the resizing routine whenever there's a change in browser geometry
 	this.windowResizeHandler = function() {
@@ -563,6 +584,7 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 	this.activate = function() {
 		inst.dormant = false;
 		inst.visible.style.display = "block";
+		inst.visible.style.zIndex = "10";
 		inst.windowResizeHandler();
 	}
 
@@ -570,14 +592,45 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 	this.deactivate = function() {
 		inst.dormant = true;
 		inst.visible.style.display = "none";
+		inst.visible.style.zIndex = "0";
+	}
+	// convert touchpoint screen coordinates into button-relative horizontal position
+	this.horizontalTouchPoint = function( touchScreenX ) {
+		var leftBorderPixel = inst.leftPixel;
+		var rightBorderPixel = inst.leftPixel + inst.widthPixel;
+		var touchX = touchScreenX;
+		if( touchX > rightBorderPixel ) touchX = rightBorderPixel;
+		if( touchX < leftBorderPixel ) touchX = leftBorderPixel;
+		return ( ( touchX - leftBorderPixel ) / ( rightBorderPixel - leftBorderPixel ) );
+	}
+	// convert touchpoint screen coordinates into button-relative vertical position
+	this.verticalTouchPoint = function( touchScreenY ) {
+		var topBorderPixel = inst.topPixel;
+		var bottomBorderPixel = inst.topPixel + inst.heightPixel;
+		var touchY = touchScreenY;
+		if( touchY > bottomBorderPixel ) touchY = bottomBorderPixel;
+		if( touchY < topBorderPixel ) touchY = topBorderPixel;
+		return ( ( touchY - topBorderPixel ) / ( bottomBorderPixel - topBorderPixel ) );
 	}
 	// handlers for mouse and touch events
 	this.mouseDownEventHandler = function( e ) {
 		if( inst.dormant ) return;
+		event.preventDefault();
 		// a mouse click on the button sets the button's "Down" flag to true...
 		inst.buttonDown = true;
+		// initializes the touch location variables...
+		inst.touchPointX = 100.0 * inst.horizontalTouchPoint( e.clientX );
+		inst.touchPointY = 100.0 * inst.verticalTouchPoint( e.clientY );
 		// and invokes the button's handler routine
 		clickHandler();
+	}
+	this.mouseMoveEventHandler = function( e ) {
+		if( inst.dormant ) return;
+		if( !inst.buttonDown ) return;
+		event.preventDefault();
+		// update the touch location variables
+		inst.touchPointX = 100.0 * inst.horizontalTouchPoint( e.clientX );
+		inst.touchPointY = 100.0 * inst.verticalTouchPoint( e.clientY );
 	}
 	this.mouseUpEventHandler = function( e ) {
 		if( inst.dormant ) return;
@@ -594,8 +647,24 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 		event.preventDefault();
 		// touching the button sets the button's "Down" flag to true...
 		inst.buttonDown = true;
+		// initializes the touch location variables...
+		inst.touchPointX = 100.0 * inst.horizontalTouchPoint( e.touches[ 0 ].clientX );
+		inst.touchPointY = 100.0 * inst.verticalTouchPoint( e.touches[ 0 ].clientY );
 		// and invokes the button's handler routine
 		clickHandler();
+	}
+	this.touchMoveEventHandler = function( e ) {
+		if( inst.dormant ) return;
+		if( !inst.buttonDown ) {
+			if( allowSlidingOn )
+				inst.buttonDown = true;
+			else
+				return;
+		}
+		event.preventDefault();
+		// update the touch location variables
+		inst.touchPointX = 100.0 * inst.horizontalTouchPoint( e.touches[ 0 ].clientX );
+		inst.touchPointY = 100.0 * inst.verticalTouchPoint( e.touches[ 0 ].clientY );
 	}
 	this.touchEndEventHandler = function( e ) {
 		if( inst.dormant ) return;
@@ -610,16 +679,22 @@ function imageButton( imageFileName, hostElementId, leftPercent, topPercent, wid
 		inst.buttonDown = false;
 	}
 
-	// an initial invocation of the resizing routine to work out the starting geometry of the control
-	this.windowResizeHandler();
+	// at time of instantiation/creation, be dormant until activation is invoked
+	this.deactivate();
 
-	// add an event listener to invoke the resize handler
+	// add event listeners to invoke the resize handler
 	window.addEventListener( "resize", this.windowResizeHandler, false );
+	window.addEventListener( "orientationchange", this.windowResizeHandler, false );
 	// add event listeners to invoke the mouse/touch handlers
 	this.visible.addEventListener( "mousedown", this.mouseDownEventHandler, false );
+	// if( allowSlidingOn ) {
+	// 	this.visible.addEventListener( "mouseover", this.mouseDownEventHandler, false );
+	// }
+	this.visible.addEventListener( "mousemove", this.mouseMoveEventHandler, false );
 	this.visible.addEventListener( "mouseup", this.mouseUpEventHandler, false );
-	this.visible.addEventListener( "mouseout", this.mouseMoveEventHandler, false );
+	this.visible.addEventListener( "mouseout", this.mouseUpEventHandler, false );
 	this.visible.addEventListener( "touchstart", this.touchStartEventHandler, false );
+	this.visible.addEventListener( "touchmove", this.touchMoveEventHandler, false );
 	this.visible.addEventListener( "touchend", this.touchEndEventHandler, false );
 	this.visible.addEventListener( "touchleave", this.touchLeaveEventHandler, false );
 }

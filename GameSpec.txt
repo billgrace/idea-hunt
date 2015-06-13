@@ -49,55 +49,21 @@ The front image of the self will have a set of emotional expressions (interested
 Looking up the proportions of the human head... online anime art tutorial puts it at height(chin-to-crown)/width(temple-to-temple-NOT-including-ears)/front/back(tip-of-nose-to-back-of-head) as 16/8/9. Apparently a typical ratio of head height to full body height is about 8 so a 2 meter body might have a .25 meter-high(y) head => .125 meters temple-to-temple(x) => .14 meters back-of-head-to-tip-of-nose(z). Let's try "self" for starters as a box that's .25 meters high, .125 meters wide and .14 meters front to back.
 Global Geometry *****************************************************************************************
 
-Needed -
-- self editor
-... vanity cam controls to evaluate appearance of self
-... self editing happens in a little workshop near the launcher
-... let's define a self as consisting of:
-- - - - a text name
-- - - - a head consisting of five views, each slightly oval, each a JPG image:
-= = = = = = front view (face, mask, helmet front)
-= = = = = = top view (hair, hat)
-= = = = = = back view (hair, collar)
-= = = = = = left/right views (profiles)
-- - - - a body consisting of four views, each rectangular, each a JPG image:
-= = = = = = front view (chest/belly/hips)
-= = = = = = back view (shoulder blades/back/butt)
-= = = = = = left/right views (1 manipulator anchor point each plus 1 support anchor point each)
-- - - - zero or more manipulators (arms, tentacles, mechanisms)
-= = = = = = starting manipulator design = 2 segmented arm, each segment is a cylinder
-- - - - zero or more supports (legs, fins, wheels)
-= = = = = = starting support design = 2 segmented arm, each segment is a cylinder
-... text editing of self's name
-... local storage for selfs
-- starting set of topics
-... topic browsing screen
-... topic launch visuals and audio
-... topic terrain and horizon
-- starting set of ideas related to the topics
-... idea markers visual appearance
-... idea markers locations in terrain
-- starting launcher design
-... a giant coil spring with a chair on the front?
-... a pair of skiis on the bottom of the chair?
-... a pair of tracks on which the skiis run?
-... controls "compress" the launcher, moving the self back
-... launch releases the spring and the self roars forward
-... when the tracks end, the self flies off into the game space
-- topic browsing world design
-- launching world design
-- flying world design
 
-Version 0.0, 0.1:
-	self is a yellow sphere
-	set of topics is
-		a picture of the Grand Canyon
-	launcher is a red cylinder
-Version 0.2:
-	self is a peach-colored box roughly head-proportioned
-	set of topics is
-		Electricity
-		Mechanics
-		Tools
-	launcher is a green strip
-
+Idiomatic uses of "Idea":
+bright idea
+rough idea
+put idea into head
+big idea
+very idea
+foggiest idea
+float an idea
+sensible idea
+good idea
+great idea
+half-baked idea
+absurd idea
+new idea
+dangerous idea
+original idea
+brilliant idea

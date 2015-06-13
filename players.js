@@ -39,7 +39,6 @@ function IdeaHuntPlayerGallery() {
 	this.playerGalleryMugShotHeight = 0;
 	this.lastUsedPlayerMugShot = 0;
 	this.currentlySelectedPlayerMugShotIndex = 0;
-	this.aPlayerMugShotIsCurrentlySelected = false;
 	this.currentlySelectedPlayerName = "nemo";
 	this.playerGalleryAspects = {
 		wide: "wide",
@@ -50,14 +49,10 @@ function IdeaHuntPlayerGallery() {
 	this.playerGalleryTotalNumberOfMugShots = 0;
 	this.playerGalleryVisibleNumberOfMugShots = 0;
 	this.playerGalleryVisibleMugShotOffset = 0;
-	this.playerGalleryFullScreenContainer = document.createElement( "div" );
-	document.body.appendChild( this.playerGalleryFullScreenContainer );
-	this.playerGalleryFullScreenContainer.id = "playerGalleryFullScreenContainerId";
-	this.playerGalleryFullScreenContainer.style.cssText = "position:absolute;width:100%;height:100%";
 	this.playerGalleryDiv = document.createElement( "div" );
 	this.playerGalleryDiv.id = "playerGalleryDivId";
 	this.playerGalleryDiv.style.display = "none";
-	document.body.appendChild( this.playerGalleryDiv );
+	choosePlayerScreenDiv.appendChild( this.playerGalleryDiv );
 	this.playerGalleryDiv.style.cssText = "position:absolute;overflow:hidden";
 	this.playerGalleryDiv.style.backgroundColor = this.playerGalleryBackgroundColor;
 	this.playerGalleryLeftMask = document.createElement( "div" );
@@ -83,7 +78,6 @@ function IdeaHuntPlayerGallery() {
 		inst.currentlySelectedPlayerMugShotIndex = clickedPlayerMugShotIndex;
 		inst.currentlySelectedPlayerName = inst.selfNameList[ inst.currentlySelectedPlayerMugShotIndex ];
 		inst.playerMugShotList[ clickedPlayerMugShotIndex ].isSelected = true;
-		inst.aPlayerMugShotIsCurrentlySelected = true;
 	}
 	this.fetchPlayerMugShotCollection = function() {
 		inst.selfNameList.push( 'Happy', 'Sleepy', 'Sad', 'Grumpy', 'Dopey', 'Atsign', 'Copyright', 'Omega', 'Oomlaut-O', 'Theta' );
@@ -94,9 +88,12 @@ function IdeaHuntPlayerGallery() {
 			inst.playerMugShotList[ i ].cntnr.addEventListener( "mousedown", inst.onPlayerMugMouseDown );
 			inst.playerMugShotList[ i ].cntnr.addEventListener( "touchstart", inst.onPlayerMugMouseDown );
 		}
-		inst.aPlayerMugShotIsCurrentlySelected = false;
+		// inst.aPlayerMugShotIsCurrentlySelected = false;
 		inst.playerGalleryVisibleMugShotsOffset = 0.0;
-		inst.lastUsedPlayerMugShot = 5;
+		inst.lastUsedPlayerMugShot = 0;
+		inst.currentlySelectedPlayerMugShotIndex = 0;
+		inst.currentlySelectedPlayerName = inst.selfNameList[ inst.currentlySelectedPlayerMugShotIndex ];
+		inst.playerMugShotList[ 0 ].isSelected = true;
 	}
 
 	this.storePlayerMugShotCollection = function() {
@@ -255,7 +252,6 @@ function IdeaHuntPlayerGallery() {
 	}
 
 	this.fetchPlayerMugShotCollection();
-	this.onWindowResize();
 
 	window.addEventListener( "resize", this.onWindowResize, false );
 	window.addEventListener( "orientationchange", this.onWindowResize, false );
