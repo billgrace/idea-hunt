@@ -105,3 +105,5 @@ I can fly around inside and outside the box with pretty pictures on the walls an
 To make the initial self/player a bit better, the six-sided box self is replaced with simple shapes generated in blender to be a head, hair, hat and shirt/body with assignable colors.
 I'm calling this V0.8 and moving on to update the player selection and editing.
 
+******************************** OK, I'm about to drop the navigation by rotation and physics and try a simpler approach where the player controls left/right and forward/backward motion and an underlying terrain is tracked for vertical position. A "terrain.js" module has been started. I've already chopped the code quite a bit in this direction but mostly by commenting out things and I'm about to REALLY chop it to seriously get rid of a lot of stuff so I'm making a commit here in case I ever want to get back to roughly where I'd gotten with the rotation/velocity approach.... thus, V0.9, "Ta da".
+

@@ -16,19 +16,57 @@
  * an IndexedDb object store for player information is named "ideahunt.players"
  * each player has:
  *  a text name
- *  a choice of self image:
- *   - one of several stock JPG images built into the game
- *   - or "custom" with a player-supplied JPG image
- *  self image is a JPG 150 pixels wide, 225 pixels high
+ *  a choice of self image
  */
-// IdeaHuntPlayerGallery makes the gallery of known players.
+var selfMeshHeadColors = [ 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff ];
+var selfMeshHairColors = [ 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff ];
+var selfMeshHatColors = [ 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff ];
+var selfMeshTorsoColors = [ 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff ];
+var selfMeshHeadShapes = {
+	spherical: 0,
+	cylindrical: 1,
+	conical: 2
+};
+var selfMeshHairShapes = {
+	bowlcut: 0,
+	napecover: 1,
+	girlcurl: 2
+};
+var selfMeshHatShapes = {
+	beanie: 0,
+	baseball: 1,
+	brimmed: 2
+};
+var selfMeshTorsoShapes = {
+	square: 0,
+	cylinder: 1,
+	triangle: 2,
+	disk: 3
+};
+// player makes a single player.
+function player( headColor, headShape, hairColor, hairShape, hatColor, hatShape, torsoColor, torsoShape ) {
+	var inst = this;
+	this.playerIsDormant = true;
+	this.headColor = headColor;
+	this.headShape = headShape;
+	this.hairColor = hairColor;
+	this.hairShape = hairShape;
+	this.hatColor = hatColor;
+	this.hatShape = hatShape;
+	this.torsoColor = torsoColor;
+	this.torsoShape = torsoShape;
+	this.headGeometry
+	this.position = new THREE.Vector3();
+	this.orientation = new THREE.Quaternion();
+}
+// playerGallery makes the gallery of known players.
 // Players can be added, made dormant (??? deleted permanently ???) and modified.
 // The gallery of players can be stored and loaded from local database storage.
 // One of the players in the gallery can be selected as the player to play the game.
 // Each time the game is loaded a single playerGallery is instantiated.
-function IdeaHuntPlayerGallery() {
+function playerGallery() {
 	var inst = this;
-	// make a variable to allow the text box to become dormant
+	// make a variable to allow the player gallery to become dormant
 	this.playerGalleryIsDormant = true;
 	this.playerGalleryIsBeingTouched = false;
 	this.playerGalleryBackgroundColor = "#40c080";
@@ -70,6 +108,9 @@ function IdeaHuntPlayerGallery() {
 	this.playerGalleryVelocity = 0;
 	this.selfNameList = [];
 	this.playerMugShotList = [];
+	this.playerHeadColor = {
+		lightBlond: 0
+	}
 
 	this.onPlayerMugMouseDown = function( e ) {
 		var clickedPlayerMugShotIndex = parseInt( e.currentTarget.id.substring( 13 ) );
@@ -80,7 +121,17 @@ function IdeaHuntPlayerGallery() {
 		inst.playerMugShotList[ clickedPlayerMugShotIndex ].isSelected = true;
 	}
 	this.fetchPlayerMugShotCollection = function() {
-		inst.selfNameList.push( 'Happy', 'Sleepy', 'Sad', 'Grumpy', 'Dopey', 'Atsign', 'Copyright', 'Omega', 'Oomlaut-O', 'Theta' );
+		// inst.selfNameList.push( 'Happy', 'Sleepy', 'Sad', 'Grumpy', 'Dopey', 'Atsign', 'Copyright', 'Omega', 'Oomlaut-O', 'Theta' );
+		// inst.playerGalleryTotalNumberOfMugShots = inst.selfNameList.length;
+		// for( var i = 0; i < inst.playerGalleryTotalNumberOfMugShots; i++ ) {
+		// 	inst.playerMugShotList.push( new playerMugShot( inst.selfNameList[ i ], "playerGalleryDivId" ) );
+		// 	inst.playerMugShotList[ i ].cntnr.id = "playerMugShot" + i;
+		// 	inst.playerMugShotList[ i ].cntnr.addEventListener( "mousedown", inst.onPlayerMugMouseDown );
+		// 	inst.playerMugShotList[ i ].cntnr.addEventListener( "touchstart", inst.onPlayerMugMouseDown );
+		// }
+
+
+		inst.selfNameList.push( 'Suzie', 'Freddy', 'Sam', 'Becky', 'Tom', 'Bill', 'Vanessa', 'Winifred', 'Gloria' );
 		inst.playerGalleryTotalNumberOfMugShots = inst.selfNameList.length;
 		for( var i = 0; i < inst.playerGalleryTotalNumberOfMugShots; i++ ) {
 			inst.playerMugShotList.push( new playerMugShot( inst.selfNameList[ i ], "playerGalleryDivId" ) );
@@ -88,7 +139,9 @@ function IdeaHuntPlayerGallery() {
 			inst.playerMugShotList[ i ].cntnr.addEventListener( "mousedown", inst.onPlayerMugMouseDown );
 			inst.playerMugShotList[ i ].cntnr.addEventListener( "touchstart", inst.onPlayerMugMouseDown );
 		}
-		// inst.aPlayerMugShotIsCurrentlySelected = false;
+
+
+
 		inst.playerGalleryVisibleMugShotsOffset = 0.0;
 		inst.lastUsedPlayerMugShot = 0;
 		inst.currentlySelectedPlayerMugShotIndex = 0;
@@ -274,7 +327,7 @@ function playerMugShot( playerName, hostElementId ) {
 	this.cntnr.style.display = "none";
 	this.image = document.createElement( "img" );
 	this.cntnr.appendChild( this.image );
-	this.image.src = "art/" + playerName + ".jpg";
+	// this.image.src = "art/" + playerName + ".jpg";
 	this.image.style.width = "100%";
 	this.image.style.height = "75%";
 	this.nam = document.createElement( "div" );

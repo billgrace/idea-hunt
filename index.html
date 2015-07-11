@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Idea Hunt 0.8</title>
+	<title>Idea Hunt 0.9</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style type="text/css">
@@ -14,6 +14,7 @@
 </head>
 <body>
 	<script type="text/javascript" src="three.min.js"></script>
+	<script type="text/javascript" src="ImprovedNoise.js"></script>
 	<script type="text/javascript" src="stats.min.js"></script>
 	<script type="text/javascript" src="OrbitControls.js"></script>
 	<script type="text/javascript" src="cannon.min.js"></script>
@@ -23,24 +24,43 @@
 		// - - Development
 		var debuggingModeIsOn = true;
 		var devMsg;
-		var pitchX = 0.0, pitchY = 0.0, pitchZ = 0.0;
+		var frames = 0, seconds = 0, minutes = 0, hours = 0, days = 0;
 		// - - Cameras, scenes, lights, renderer
 		var scene, renderer, camera, light;
 		var cameraLaunchPosition = new THREE.Vector3();
 		var cameraLaunchOrientation = new THREE.Quaternion();
+		// - - Geometry
+		var worldPixelWidth = 10000;
+		var worldPixelLength = 10000;
+		var worldPixelHeight = 20000;
 		// - - Physics
 		var caWorld;
 		var cannonDebugThreeJsOutliner;
+		// - - Terrain
+		var terrainTexture, terrainGeometry, terrainHeightData, terrainVertices, terrainMaterial, terrainMesh;
+		var terrainPixelWidth, terrainPixelLength, terrainVertexWidth, terrainVertexLength, terrainHalfVertexWidth, terrainHalfVertexLength;
 		// - - Players
-		// var selfGeometry, selfMaterial, selfMesh, selfBody, selfMeshHomePosition;
-		var selfMeshPosition, selfMeshOrientation;
-		var selfHeadMesh, selfHairMesh, selfHatMesh, selfShirtMesh;
-		var selfHeadGeometry, selfHairGeometry, selfHatGeometry, selfShirtGeometry;
-		var selfHeadMaterial, selfHairMaterial, selfHatMaterial, selfShirtMaterial;
-		var selfHeadOffset, selfHairOffset, selfHatOffset, selfShirtOffset;
-		var selfBody, selfMeshHomePosition;
-		var selfMaterialArray = [];
-		var playerGallery;
+		var selfMeshPosition, selfMeshOrientation, selfMeshHomePosition;
+		// - - - each player has four parts: head, hair, hat & torso
+		// - - - each of the four parts is implemented for rendering as a separate mesh
+		// - - - - generic player-part mesh variables for the currently-active player
+		var selfHeadMesh, selfHairMesh, selfHatMesh, selfTorsoMesh;
+		// - - - - individual mesh variables for all the kinds of meshes we have that might make up the parts of a player
+		var sphericalHeadMesh, cylindricalHeadMesh, conicalHeadMesh;
+		var bowlcutHairMesh, napecoverHairMesh, girlcurlHairMesh;
+		var beanieHatMesh, baseballHatMesh, brimmedHatMesh;
+		var squareTorsoMesh, cylinderTorsoMesh, triangleTorsoMesh, diskTorsoMesh;
+
+		var selfHeadMaterial, selfHairMaterial, selfHatMaterial, selfTorsoMaterial;
+
+		var selfHeadOffset, selfHairOffset, selfHatOffset, selfTorsoOffset;
+		var sphericalHeadOffset, cylindricalHeadOffset, conicalHeadOffset;
+		var bowlcutHairOffset, napecoverHairOffset, girlcurlHairOffset;
+		var beanieHatOffset, baseballHatOffset, brimmedHatOffset;
+		var squareTorsoOffset, cylinderTorsoOffset, triangleTorsoOffset, diskTorsoOffset;
+
+		var selfBody, selfBodyHomePosition;
+		var galleryOfPlayers;
 		var playerToEditIndex, newPlayerBeingCreated;
 		// - - Global screen geometry
 		var windowWidth, windowHeight;
@@ -62,11 +82,12 @@
 		var coreWindowContainer, coreWindowWidth, coreWindowHeight, coreWindowLeft, coreWindowTop, coreWindowBottom, coreWindowRight;
 		var optHWindowContainer, optHWindowWidth, optHWindowHeight, optHWindowLeft, optHWindowTop, optHWindowBottom, optHWindowRight;
 		var optVWindowContainer, optVWindowWidth, optVWindowHeight, optVWindowLeft, optVWindowTop, optVWindowBottom, optVWindowRight;
+		var topicHorizonNorthMaterial, topicHorizonSouthMaterial, topicHorizonEastMaterial, topicHorizonWestMaterial, topicHorizonSkyMaterial, topicHorizonGroundMaterial;
 		var topicHorizonGeometry, topicHorizontMaterial, topicHorizonMesh, topicHorizonTexture;
 		var topicHorizonMaterialArray = [];
 		var launchPlatformMesh;
-		var launcherMesh, launcherMeshHomePosition, launcherToSelfOffset;
-		var flyerMesh, flyerBody, flyerMeshHomePosition;
+		var launcherPusherMesh, launcherPusherMeshHomePosition, launcherPusherOffset;
+		var flyerGeometry, flyerMaterial, flyerMesh, flyerOffset;
 		// var viewOrbitControls, navOrbitControls, selfOrbitControls;
 		var orbitControls;
 		var launchButton, launchButtonLabel;
@@ -75,9 +96,13 @@
 		var selfBodyLaunchVelocity = new THREE.Vector3;
 		var launchCameraFocusPoint, launchStartCameraSelfConvergenceAnimationCounter, launchStartCameraSelfConvergenceAnimationCount = 500;
 		// - - Roaming screen
-		var roamingBackButton, roamingPauseButton, roamingFasterButton, roamingSlowerButton, roamingLeftButton;
-		var roamingRightButton, roamingShootButton, roamingGraspButton, roamingUpButton, roamingDownButton;
-		var roamingMaxPitchChange = 0.003, roamingMaxYawChange = 0.003, roamingSpeedMultplier = 10.0;
+		var roamingDirectionButton;
+		var roamingBackButton, roamingPauseButton;
+		// var roamingFasterButton, roamingSlowerButton;
+		var roamingShootButton, roamingGraspButton, roamingUpButton, roamingDownButton;
+		// var roamingMaxPitchChange = 0.003, roamingMaxYawChange = 0.003;
+		var roamingMaxLeftRightChange = 0.03, roamingMaxFrontBackChange = 0.03;
+		// var roamingSpeedMultplier = 1.0;
 		var roamingCurrentSpeedScalar, roamingVelocityVector = new THREE.Vector3( 0, 0, -1 );
 		var roamingRaycaster;
 		// - - Screen navigation
@@ -99,9 +124,10 @@
 	<script type="text/javascript" src="cameras.js"></script>
 	<script type="text/javascript" src="context.js"></script>
 	<script type="text/javascript" src="controls.js"></script>
+	<script type="text/javascript" src="eventHandlers.js"></script>
 	<script type="text/javascript" src="motion.js"></script>
 	<script type="text/javascript" src="players.js"></script>
-	<script type="text/javascript" src="eventHandlers.js"></script>
+	<script type="text/javascript" src="terrain.js"></script>
 	<script type="text/javascript">
 		init();
 		animate();
@@ -112,6 +138,7 @@
 			initCamera();
 			initEventHandlers();
 			updateRenderingGeometry();
+			initTerrain();
 			render();
 			// initEventHandlers();
 		}

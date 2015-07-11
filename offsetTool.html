@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Idea Hunt Offset Tool</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style type="text/css">
+		body {
+			margin: 0px;
+			background-color: #fff;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+<script type="text/javascript" src="three.min.js"></script>
+<script type="text/javascript" src="stats.min.js"></script>
+<script type="text/javascript" src="OrbitControls.js"></script>
+<script type="text/javascript">
+	var initialLoadingSemaphore;
+	var scene, renderer, camera, light;
+	var sphericalHeadMesh, cylindricalHeadMesh, conicalHeadMesh;
+	var bowlcutHairMesh, napecoverHairMesh, girlcurlHairMesh;
+	var beanieHatMesh, baseballHatMesh, brimmedHatMesh;
+	var squareTorsoMesh, cylinderTorsoMesh, triangleTorsoMesh, diskTorsoMesh;
+
+	var selfHeadMaterial, selfHairMaterial, selfHatMaterial, selfTorsoMaterial;
+
+	var sphericalHeadOffset, cylindricalHeadOffset, conicalHeadOffset;
+	var bowlcutHairOffset, napecoverHairOffset, girlcurlHairOffset;
+	var beanieHatOffset, baseballHatOffset, brimmedHatOffset;
+	var squareTorsoOffset, cylinderTorsoOffset, triangleTorsoOffset, diskTorsoOffset;
+	init();
+	animate();
+	function init() {
+		initialLoadingSemaphore = 0;
+		scene = new THREE.Scene();
+		var rightLight = new THREE.DirectionalLight( 0x888888 );
+		rightLight.position.set( 1, 0, 0 ).normalize();
+		scene.add( rightLight );
+		var leftLight = new THREE.DirectionalLight( 0x888888 );
+		leftLight.position.set( -1, 0, 0 ).normalize();
+		scene.add( leftLight );
+		var bottomLight = new THREE.DirectionalLight( 0x888888 );
+		bottomLight.position.set( 0, -1, 0 ).normalize();
+		scene.add( bottomLight );
+		renderer = new THREE.WebGLRenderer();
+		document.body.appendChild( renderer.domElement );
+		camera = new THREE.PerspectiveCamera( 50, 1.3, 1, 1000000 );
+		camera.position.set( 0, 0, 1000 );
+		light = new THREE.DirectionalLight( 0x888888 );
+		scene.add( light );
+		orbitControls = new THREE.OrbitControls( camera, renderer.domElement );
+		orbitControls.damping = 0.2;
+		orbitControls.addEventListener( 'change', render );
+
+		var zeroPlane = new THREE.Mesh( new THREE.BoxGeometry( 1000, 0.1, 10 ), new THREE.MeshBasicMaterial( { color: 0xcccccc, side:THREE.DoubleSide } ) );
+		scene.add( zeroPlane );
+
+		selfHeadMaterial = new THREE.MeshPhongMaterial( { color:0xefa942, transparent:true, side:THREE.DoubleSide } );
+		selfHairMaterial = new THREE.MeshPhongMaterial( { color: 0x7f4000, transparent:true, side:THREE.DoubleSide } );
+		selfHatMaterial = new THREE.MeshPhongMaterial( { color: 0x8357dc, transparent:true, side:THREE.DoubleSide } );
+		selfTorsoMaterial = new THREE.MeshLambertMaterial( { color: 0xdc7283, transparent:true, side:THREE.DoubleSide } );
+
+		// initialize offset vectors to position active player parts relative to the active player overall position location
+		selfHeadOffset = new THREE.Vector3( 0, 0, 0 );
+		selfHairOffset = new THREE.Vector3( 0, 0, 0 );
+		selfHatOffset = new THREE.Vector3( 0, 0, 0 );
+		selfTorsoOffset = new THREE.Vector3( 0, 0, 0 );
+		sphericalHeadOffset = new THREE.Vector3( 0, 0, 0 );
+		cylindricalHeadOffset = new THREE.Vector3( 0, 0, 0 );
+		conicalHeadOffset = new THREE.Vector3( 0, 0, 0 );
+		bowlcutHairOffset = new THREE.Vector3( 0, 0, 0 );
+		napecoverHairOffset = new THREE.Vector3( 0, 0, 0 );
+		girlcurlHairOffset = new THREE.Vector3( 0, 0, 0 );
+		beanieHatOffset = new THREE.Vector3( 0, 0, 0 );
+		baseballHatOffset = new THREE.Vector3( 0, 0, 0 );
+		brimmedHatOffset = new THREE.Vector3( 0, 0, 0 );
+		squareTorsoOffset = new THREE.Vector3( 0, 0, 0 );
+		cylinderTorsoOffset = new THREE.Vector3( 0, 0, 0 );
+		triangleTorsoOffset = new THREE.Vector3( 0, 0, 0 );
+		diskTorsoOffset = new THREE.Vector3( 0, 0, 0 );
+
+		// load the blender-generated json files containing stock geometries that can be chosen to make up the parts of a player
+		// (head geometries)
+		var sphericalHeadLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		sphericalHeadLoader.load( 'geometry/sphericalHead.json', function( geometry ) {
+			sphericalHeadMesh = new THREE.Mesh( geometry, selfHeadMaterial );
+			clearLoadingSemaphore();
+		} );
+		var cylindricalHeadLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		cylindricalHeadLoader.load( 'geometry/cylindricalHead.json', function( geometry ) {
+			cylindricalHeadMesh = new THREE.Mesh( geometry, selfHeadMaterial );
+			clearLoadingSemaphore();
+		} );
+		var conicalHeadLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		conicalHeadLoader.load( 'geometry/conicalHead.json', function( geometry ) {
+			conicalHeadMesh = new THREE.Mesh( geometry, selfHeadMaterial );
+			clearLoadingSemaphore();
+		} );
+		// (hair geometries)
+		var bowlcutHairLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		bowlcutHairLoader.load( 'geometry/bowlcutHair.json', function( geometry ) {
+			bowlcutHairMesh = new THREE.Mesh( geometry, selfHairMaterial );
+			clearLoadingSemaphore();
+		} );
+		var napecoverHairLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		napecoverHairLoader.load( 'geometry/napecoverHair.json', function( geometry ) {
+			napecoverHairMesh = new THREE.Mesh( geometry, selfHairMaterial );
+			clearLoadingSemaphore();
+		} );
+		var girlcurlHairLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		girlcurlHairLoader.load( 'geometry/girlcurlHair.json', function( geometry ) {
+			girlcurlHairMesh = new THREE.Mesh( geometry, selfHairMaterial );
+			clearLoadingSemaphore();
+		} );
+		// (hat geometries)
+		var beanieHatLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		beanieHatLoader.load( 'geometry/beanieHat.json', function( geometry ) {
+			beanieHatMesh = new THREE.Mesh( geometry, selfHatMaterial );
+			clearLoadingSemaphore();
+		} );
+		var baseballHatLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		baseballHatLoader.load( 'geometry/baseballHat.json', function( geometry ) {
+			baseballHatMesh = new THREE.Mesh( geometry, selfHatMaterial );
+			clearLoadingSemaphore();
+		} );
+		var brimmedHatLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		brimmedHatLoader.load( 'geometry/brimmedHat.json', function( geometry ) {
+			brimmedHatMesh = new THREE.Mesh( geometry, selfHatMaterial );
+			clearLoadingSemaphore();
+		} );
+		// (torso geometries)
+		var squareTorsoLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		squareTorsoLoader.load( 'geometry/squareTorso.json', function( geometry ) {
+			squareTorsoMesh = new THREE.Mesh( geometry, selfTorsoMaterial );
+			clearLoadingSemaphore();
+		} );
+		var cylinderTorsoLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		cylinderTorsoLoader.load( 'geometry/cylinderTorso.json', function( geometry ) {
+			cylinderTorsoMesh = new THREE.Mesh( geometry, selfTorsoMaterial );
+			clearLoadingSemaphore();
+		} );
+		var triangleTorsoLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		triangleTorsoLoader.load( 'geometry/triangleTorso.json', function( geometry ) {
+			triangleTorsoMesh = new THREE.Mesh( geometry, selfTorsoMaterial );
+			clearLoadingSemaphore();
+		} );
+		var diskTorsoLoader = new THREE.JSONLoader();
+		registerLoadingSemaphore();
+		diskTorsoLoader.load( 'geometry/diskTorso.json', function( geometry ) {
+			diskTorsoMesh = new THREE.Mesh( geometry, selfTorsoMaterial );
+			clearLoadingSemaphore();
+		} );
+	}
+	function buildItemsWaitingForLoadComplete() {
+		// selfHeadMesh = conicalHeadMesh;
+		// selfHairMesh = girlcurlHairMesh;
+		// selfHatMesh = brimmedHatMesh;
+		// selfTorsoMesh = diskTorsoMesh;
+		// selfHeadOffset.copy( conicalHeadOffset );
+		// selfHairOffset.copy( girlcurlHairOffset );
+		// selfHatOffset.copy( brimmedHatOffset );
+		// selfTorsoOffset.copy( diskTorsoOffset );
+
+		scene.add( sphericalHeadMesh );
+		sphericalHeadMesh.position.set( -30, 0, 0 );
+		scene.add( cylindricalHeadMesh );
+		cylindricalHeadMesh.position.set( 0, 0, 0 );
+		scene.add( conicalHeadMesh );
+		conicalHeadMesh.position.set( 30, 0, 0 );
+		scene.add( bowlcutHairMesh );
+		bowlcutHairMesh.position.set( -30, 0, 0 );
+		scene.add( napecoverHairMesh );
+		napecoverHairMesh.position.set( 0, 0, 0 );
+		scene.add( girlcurlHairMesh );
+		girlcurlHairMesh.position.set( 30, -2.9, 0 );
+		scene.add( beanieHatMesh );
+		beanieHatMesh.position.set( -30, 7, 0 );
+		scene.add( baseballHatMesh );
+		baseballHatMesh.position.set( 0, 7, 0 );
+		scene.add( brimmedHatMesh );
+		brimmedHatMesh.position.set( 30, 7, 0 );
+		scene.add( squareTorsoMesh );
+		squareTorsoMesh.position.set( -60, -19, 0 );
+		scene.add( cylinderTorsoMesh );
+		cylinderTorsoMesh.position.set( -30, -19, 0 );
+		scene.add( triangleTorsoMesh );
+		triangleTorsoMesh.position.set( 0, -19, 0 );
+		scene.add( diskTorsoMesh );
+		diskTorsoMesh.position.set( 30, -19, 0 );
+	}
+	function registerLoadingSemaphore() {
+		initialLoadingSemaphore++;
+	}
+	function clearLoadingSemaphore() {
+		initialLoadingSemaphore--;
+	}
+	function animate() {
+		if( 0 == initialLoadingSemaphore ) {
+			buildItemsWaitingForLoadComplete();
+		}
+		orbitControls.update();
+		render();
+		requestAnimationFrame( animate );
+	}
+	function render() {
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		camera.updateProjectionMatrix();
+		renderer.render( scene, camera );
+	}
+</script>
+</body>
+</html>

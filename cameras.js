@@ -11,8 +11,6 @@
 function initCamera() {
 	camera = new THREE.PerspectiveCamera( 50, 1.3, 1, 1000000 );
 	homeTheCamera();
-	light = new THREE.DirectionalLight( 0x888888 );
-	scene.add( light );
 
 	orbitElement = document.createElement( "div" );
 	document.body.appendChild( orbitElement );
@@ -39,9 +37,22 @@ function setMeshPartsOpacityTo( opacity0to1 ) {
 	selfHeadMaterial.opacity = opacity0to1;
 	selfHairMaterial.opacity = opacity0to1;
 	selfHatMaterial.opacity = opacity0to1;
-	selfShirtMaterial.opacity = opacity0to1;
+	selfTorsoMaterial.opacity = opacity0to1;
 }
-function trackTheCameraToSelfMeshPosition() {
+function locateCameraBehindPlayer( howFar ) {
+	// using the orientation of the player, move the camera toward the player's "rear" by the given distance
+	// ... get the direction of "player's rear"
+	var playerRearward = new THREE.Vector3( 0, 0, 1 );
+	var meshOrientationQuaternion = new THREE.Quaternion();
+	meshOrientationQuaternion.copy( selfMeshOrientation );
+	playerRearward.applyQuaternion( meshOrientationQuaternion.normalize() );
+	// ... scale this direction vector to the given distance
+	playerRearward.normalize();
+	playerRearward.multiplyScalar( howFar );
+	// ... set the camera position to the player position plus the new offset vector
+	camera.position.addVectors( selfMeshPosition, playerRearward );
+}
+function trackTheCameraToSelfMesh() {
 	if( launchStartCameraSelfConvergenceAnimationCounter > 0 ) {
 		// animate the view camera from its home position to the mesh's position
 		// - how far behind are we in the animation? (starts at "almost entirely" and gradually moves to "not at all")
@@ -52,23 +63,33 @@ function trackTheCameraToSelfMeshPosition() {
 		var cameraPx = selfMeshPosition.x - behindAmountFraction * ( selfMeshPosition.x - cameraLaunchPosition.x );
 		var cameraPy = selfMeshPosition.y - behindAmountFraction * ( selfMeshPosition.y - cameraLaunchPosition.y );
 		var cameraPz = selfMeshPosition.z - behindAmountFraction * ( selfMeshPosition.z - cameraLaunchPosition.z );
-		var cameraQx = selfMeshOrientation.x - behindAmountFraction * ( selfMeshOrientation.x - cameraLaunchOrientation.x );
-		var cameraQy = selfMeshOrientation.y - behindAmountFraction * ( selfMeshOrientation.y - cameraLaunchOrientation.y );
-		var cameraQz = selfMeshOrientation.z - behindAmountFraction * ( selfMeshOrientation.z - cameraLaunchOrientation.z );
-		var cameraQw = selfMeshOrientation.w - behindAmountFraction * ( selfMeshOrientation.w - cameraLaunchOrientation.w );
+		// var cameraQx = selfMeshOrientation.x - behindAmountFraction * ( selfMeshOrientation.x - cameraLaunchOrientation.x );
+		// var cameraQy = selfMeshOrientation.y - behindAmountFraction * ( selfMeshOrientation.y - cameraLaunchOrientation.y );
+		// var cameraQz = selfMeshOrientation.z - behindAmountFraction * ( selfMeshOrientation.z - cameraLaunchOrientation.z );
+		// var cameraQw = selfMeshOrientation.w - behindAmountFraction * ( selfMeshOrientation.w - cameraLaunchOrientation.w );
 		camera.position.set( cameraPx, cameraPy, cameraPz );
-		camera.quaternion.set( cameraQx, cameraQy, cameraQz, cameraQw );
+		camera.lookAt( selfMeshPosition );
+		// locateCameraBehindPlayer( 75 );
+		// camera.quaternion.set( cameraQx, cameraQy, cameraQz, cameraQw );
 		// Over the last part of the animation, fade the self mesh to transparency
 		// The following "fadeFactor" will start at 3.0 and move to 0.0 and provide the opacity value (1.0...0.0)
 		var fadeFactor = ( launchStartCameraSelfConvergenceAnimationCounter * 3 ) / launchStartCameraSelfConvergenceAnimationCount;
-		if( fadeFactor < 1.0 ) {
-			setMeshPartsOpacityTo( fadeFactor );
+		if( ( fadeFactor < 1.0 ) && ( fadeFactor > 0.5 ) ) {
+		// if( fadeFactor < 1.0 ) {
+			// setMeshPartsOpacityTo( fadeFactor );
+		}
+		if( ( fadeFactor < 1.0 ) && ( fadeFactor > 0.5 ) ) {
+			// flyerMaterial.opacity = fadeFactor;
 		}
 	} else {
 		// launch start animation is over so just track the camera to the mesh
 		camera.position.copy( selfMeshPosition );
-		camera.quaternion.copy( selfMeshOrientation );
+		// locateCameraBehindPlayer( 75 );
+		locateCameraBehindPlayer( 575 );
+		camera.lookAt( selfMeshPosition );
+		// camera.quaternion.copy( selfMeshOrientation );
 	}
+	camera.updateProjectionMatrix();
 }
 function updateRenderingGeometry() {
 	var windowLeftSegmentPercent;
@@ -137,7 +158,7 @@ function render() {
 			break;
 		case gameScreens.roaming:
 			renderer.setSize( window.innerWidth, window.innerHeight );
-			trackTheCameraToSelfMeshPosition();
+			trackTheCameraToSelfMesh();
 			camera.updateProjectionMatrix();
 			renderer.render( scene, camera );
 			break;
